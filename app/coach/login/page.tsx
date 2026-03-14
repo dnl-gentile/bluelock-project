@@ -1,11 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@lib/AuthContext';
-import { LogIn, Loader2, Shield } from 'lucide-react';
+import { LogIn, UserPlus, Loader2, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function CoachLogin() {
-  const { loginWithGoogle, user, profile, setRole } = useAuth();
+  const { loginWithGoogle, loginAnonymously, user, profile, setRole } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -34,6 +34,17 @@ export default function CoachLogin() {
       await loginWithGoogle();
     } catch (e: any) {
       setError(e?.message || 'Erro ao entrar com Google');
+      setLoading(false);
+    }
+  };
+
+  const handleAnon = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      await loginAnonymously();
+    } catch (e: any) {
+      setError(e?.message || 'Login anônimo desativado — ative em Firebase Console.');
       setLoading(false);
     }
   };
@@ -71,10 +82,25 @@ export default function CoachLogin() {
         <button
           onClick={handleGoogle}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-orange-500 text-black font-bold hover:bg-orange-400 transition-colors disabled:opacity-60"
+          className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-orange-500 text-black font-bold hover:bg-orange-400 transition-all disabled:opacity-60"
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <LogIn className="w-5 h-5" />}
           Autenticar como Mestre
+        </button>
+
+        <div className="relative flex items-center py-2">
+          <div className="flex-grow border-t border-slate-800"></div>
+          <span className="flex-shrink-0 mx-4 text-slate-500 text-xs font-mono uppercase">Ou</span>
+          <div className="flex-grow border-t border-slate-800"></div>
+        </div>
+
+        <button
+          onClick={handleAnon}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-3 py-4 rounded-xl border border-slate-700 text-slate-300 font-medium hover:bg-slate-800 transition-all disabled:opacity-60"
+        >
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserPlus className="w-5 h-5" />}
+          Acesso Temporário (Anônimo)
         </button>
       </div>
     </div>

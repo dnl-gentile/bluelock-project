@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AlertTriangle, Brain, BookOpen, Send, Sparkles, User } from 'lucide-react';
 import { useEgoStore } from '../store/useEgoStore';
@@ -41,6 +41,8 @@ export default function AICoachChat() {
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const sendMessage = useEffectEvent(async (rawText: string) => {
     const text = rawText.trim();
@@ -223,6 +225,68 @@ export default function AICoachChat() {
     hasBootstrappedInitialQuery.current = true;
     void sendMessage(initialQuery);
   }, [initialQuery, sendMessage]);
+
+  // ── Voice recording via MediaRecorder → Whisper ──────────────────────
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  const startRecording = useCallback(async () => {
+    if (isRecording || isTranscribing) return;
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : 'audio/mp4';
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        // Stop all tracks
+        stream.getTracks().forEach((t) => t.stop());
+        setIsRecording(false);
+        setIsTranscribing(true);
+
+        try {
+          const blob = new Blob(audioChunksRef.current, { type: mimeType });
+          const form = new FormData();
+          form.append('audio', blob, 'audio.webm');
+
+          const resp = await fetch('/api/transcribe', { method: 'POST', body: form });
+          const data = await resp.json();
+
+          if (!resp.ok || !data.text) throw new Error(data.error || 'Transcrição vazia.');
+
+          void sendMessage(data.text.trim());
+        } catch (err: any) {
+          setError(err?.message || 'Erro ao transcrever áudio.');
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch {
+      setError('Permissão de microfone negada ou dispositivo indisponível.');
+    }
+  }, [isRecording, isTranscribing, sendMessage]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      setIsTranscribing(true);
+      mediaRecorderRef.current.stop();
+    }
+  }, []);
+  // ────────────────────────────────────────────────────────────────────
 
   const latestAiResponse = [...messages].reverse().find((message) => message.sender === 'ai' && message.response)?.response;
   const suggestedPrompts = latestAiResponse?.suggestedNextPrompts?.length
@@ -461,7 +525,7 @@ export default function AICoachChat() {
           <input
             type="text"
             className="flex-1 bg-transparent px-3 py-2 text-white placeholder-slate-600 focus:outline-none font-mono text-sm"
-            placeholder="Mude meu treino ou faça uma pergunta..."
+            placeholder={isRecording ? '🎙 Gravando...' : isTranscribing ? '⏳ Transcrevendo...' : 'Mude meu treino ou faça uma pergunta...'}
             value={input}
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={(event) => {
@@ -469,12 +533,42 @@ export default function AICoachChat() {
                 void sendMessage(input);
               }
             }}
-            disabled={isSending}
+            disabled={isSending || isRecording || isTranscribing}
           />
+
+          {/* Mic button — hold to record, release to auto-send */}
+          <button
+            type="button"
+            onPointerDown={startRecording}
+            onPointerUp={stopRecording}
+            onPointerLeave={stopRecording}
+            disabled={isSending || isTranscribing}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all select-none touch-none ${
+              isRecording
+                ? 'bg-[#ff003c] shadow-[0_0_20px_rgba(255,0,60,0.7)] scale-110'
+                : isTranscribing
+                ? 'bg-amber-400/20 border border-amber-400/40'
+                : 'bg-white/10 hover:bg-white/20'
+            } disabled:opacity-40`}
+            title="Segure para gravar"
+          >
+            {isTranscribing ? (
+              <span className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg
+                className={`w-4 h-4 ${isRecording ? 'text-white' : 'text-slate-400'}`}
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-7 11a7 7 0 0 0 13.9 1.3l.1-.3H21a9 9 0 0 1-8 8.94V23h-2v-2.06A9 9 0 0 1 3 13h2z"/>
+              </svg>
+            )}
+          </button>
+
           <button
             onClick={() => void sendMessage(input)}
             className="w-10 h-10 bg-[#1d4ed8] rounded-xl flex items-center justify-center text-white hover:brightness-110 transition-colors disabled:opacity-50"
-            disabled={isSending}
+            disabled={isSending || !input.trim()}
           >
             <Send className="w-4 h-4" />
           </button>
