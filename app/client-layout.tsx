@@ -58,6 +58,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { profile, logout } = useAuth();
   const pathname = usePathname();
   const isSkills = pathname === '/skills';
+  const isChat = pathname === '/chat';
 
   return (
     <div className="flex flex-col md:flex-col-reverse min-h-screen relative overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/40 via-[#050505] to-[#050505]">
@@ -65,7 +66,15 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       <div className="absolute bottom-[20%] right-[-10%] w-96 h-96 bg-[#ff003c] rounded-full mix-blend-screen filter blur-[150px] opacity-10 pointer-events-none" />
 
 
-      <main className={`flex-1 w-full relative z-10 overflow-y-auto overflow-x-hidden ${isSkills ? 'max-w-none p-0 flex flex-col' : 'max-w-5xl mx-auto px-4 py-8 pb-24 md:pb-8'}`}>
+      <main
+        className={`relative z-10 flex-1 min-h-0 w-full overflow-x-hidden ${
+          isSkills
+            ? 'max-w-none overflow-y-auto p-0 flex flex-col'
+            : isChat
+            ? 'mx-auto flex max-w-5xl flex-col overflow-hidden px-4 pt-4 pb-24 md:pb-6'
+            : 'max-w-5xl mx-auto overflow-y-auto px-4 py-8 pb-24 md:pb-8'
+        }`}
+      >
         {children}
       </main>
 

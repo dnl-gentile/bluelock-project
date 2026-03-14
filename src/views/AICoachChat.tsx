@@ -234,7 +234,7 @@ export default function AICoachChat() {
       ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)] max-w-3xl mx-auto">
+    <div className="flex h-full min-h-0 w-full max-w-3xl mx-auto flex-col overflow-hidden">
       <div className="flex items-center gap-3 py-4 border-b border-white/5 shrink-0">
         <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-[#1d4ed8] bg-[#151922] p-[2px]">
           <img src="/anri.jpg" alt="Anri" className={anriAvatarImageClass} />
@@ -248,7 +248,7 @@ export default function AICoachChat() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-6 space-y-6 scroll-smooth px-2 no-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto py-6 space-y-6 scroll-smooth px-2 no-scrollbar">
         {messages.map((msg) => {
           const isAI = msg.sender === 'ai';
           const responseTrainingPlan = msg.response?.trainingPlan;
@@ -429,14 +429,14 @@ export default function AICoachChat() {
         )}
       </div>
 
-      <div className="py-4 shrink-0">
+      <div className="pt-4 pb-2 shrink-0">
         {error && (
           <div className="mb-3 rounded-xl border border-red-500/30 bg-red-950/30 px-3 py-2 text-xs text-red-300">
             {error}
           </div>
         )}
 
-        <div className="flex gap-2 mb-2 px-1 overflow-x-auto no-scrollbar pb-1">
+        <div className="mb-2 flex gap-2 overflow-x-auto px-1 pb-1 no-scrollbar">
           {suggestedPrompts.map((prompt) => (
             <button
               key={prompt}

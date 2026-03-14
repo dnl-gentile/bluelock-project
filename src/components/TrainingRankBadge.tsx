@@ -10,31 +10,41 @@ export default function TrainingRankBadge({
   className = '',
 }: TrainingRankBadgeProps) {
   return (
-    <div className={`relative aspect-[0.89] w-[176px] ${className}`}>
-      <svg
-        viewBox="0 0 210 236"
-        className="h-full w-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.28)]"
-        preserveAspectRatio="xMidYMid meet"
-      >
+    <div className={`relative aspect-[0.88] w-[160px] ${className}`}>
+      <svg viewBox="0 0 200 228" className="h-full w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.3)]">
         <polygon
-          points="105,10 191,73 171,224 39,224 19,73"
+          points="100,12 184,74 166,220 34,220 16,74"
           fill="#f8fafc"
           stroke="#050505"
-          strokeWidth="10"
+          strokeWidth="8"
           strokeLinejoin="round"
         />
-        <line x1="34" y1="116" x2="176" y2="116" stroke="#050505" strokeWidth="8" strokeLinecap="round" />
-      </svg>
-      <div className="pointer-events-none absolute inset-x-0 top-[18%] text-center">
-        <span className="text-[3.25rem] font-black leading-none tracking-[-0.08em] text-black">
+        <line x1="32" y1="112" x2="168" y2="112" stroke="#050505" strokeWidth="6" strokeLinecap="round" />
+        <text
+          x="100"
+          y="87"
+          fill="#050505"
+          fontSize="56"
+          fontWeight="900"
+          textAnchor="middle"
+          letterSpacing="-3"
+          fontFamily="Outfit, Inter, system-ui, sans-serif"
+        >
           {position}
-        </span>
-      </div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-[14%] text-center">
-        <span className="text-[4.4rem] font-black leading-none tracking-[-0.1em] text-black">
+        </text>
+        <text
+          x="100"
+          y="192"
+          fill="#050505"
+          fontSize="76"
+          fontWeight="900"
+          textAnchor="middle"
+          letterSpacing="-6"
+          fontFamily="Outfit, Inter, system-ui, sans-serif"
+        >
           {level}
-        </span>
-      </div>
+        </text>
+      </svg>
     </div>
   );
 }

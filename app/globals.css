@@ -49,6 +49,17 @@
     background-origin: border-box;
     background-clip: padding-box, border-box;
   }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
 }
 
 /* Custom Scrollbar */

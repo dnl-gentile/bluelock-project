@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, CheckCircle2, ChevronDown, ChevronUp, MessageSquare, Target, Bookmark, Check, X } from 'lucide-react';
+import { Play, CheckCircle2, ChevronDown, ChevronUp, MessageSquare, Target, Bookmark, Check, X, Settings2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBlueLockContentStore } from '@store/useBlueLockContentStore';
@@ -29,6 +29,8 @@ export default function TrainingRoom() {
   const preferences = useAthleteProfileStore((state) => state.preferences);
   const setPreferences = useAthleteProfileStore((state) => state.setPreferences);
   const [expandedDrill, setExpandedDrill] = useState<number | null>(trainingPlan.drills[0]?.id ?? null);
+  const [isPresetsOpen, setIsPresetsOpen] = useState(false);
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
 
   const todayStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -48,9 +50,19 @@ export default function TrainingRoom() {
           <p className="text-[#1d4ed8] font-mono text-sm capitalize">{todayStr}</p>
         </div>
         
-        <div className="flex items-center gap-2 text-slate-400 bg-[#0a0e17] px-4 py-2 rounded-xl border border-white/5">
-          <Target className="w-4 h-4 text-[#ff003c]" />
-          <span className="text-sm font-mono uppercase tracking-widest text-[#ff003c]">Foco: {trainingPlan.focus}</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsPresetsOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-[#1d4ed8]/30 bg-[#162032] px-4 py-2 text-[11px] font-mono uppercase tracking-[0.18em] text-[#60a5fa]"
+          >
+            <Bookmark className="h-4 w-4" />
+            Presets
+          </button>
+          <div className="flex items-center gap-2 text-slate-400 bg-[#0a0e17] px-4 py-2 rounded-xl border border-white/5">
+            <Target className="w-4 h-4 text-[#ff003c]" />
+            <span className="text-sm font-mono uppercase tracking-widest text-[#ff003c]">Foco: {trainingPlan.focus}</span>
+          </div>
         </div>
       </div>
 
@@ -203,139 +215,185 @@ export default function TrainingRoom() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] gap-6">
-        <div className="rounded-3xl border border-white/10 bg-[#0a0e17] p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#60a5fa]">Presets</p>
-              <h3 className="text-lg font-bold text-white uppercase tracking-tight">Biblioteca de treino</h3>
-            </div>
-            <button
-              onClick={() => saveTrainingPreset(trainingPlan.title)}
-              className="rounded-full border border-[#1d4ed8]/30 bg-[#1d4ed8]/10 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.18em] text-[#60a5fa]"
-            >
-              Salvar atual
-            </button>
-          </div>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setIsPreferencesOpen(true)}
+          className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#0a0e17] px-4 py-3 text-[11px] font-mono uppercase tracking-[0.18em] text-slate-300"
+        >
+          <Settings2 className="h-4 w-4 text-[#60a5fa]" />
+          Configurar Anri
+        </button>
+      </div>
 
-          <div className="mt-4 space-y-3">
-            {trainingPresets.length > 0 ? (
-              trainingPresets.map((preset) => (
-                <div key={preset.id} className="rounded-2xl border border-white/5 bg-white/[0.03] p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold text-white">{preset.name}</p>
-                      <p className="mt-1 text-[11px] font-mono uppercase tracking-[0.18em] text-slate-500">
-                        {preset.plan.focus}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => removeTrainingPreset(preset.id)}
-                      className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500"
-                    >
-                      remover
-                    </button>
-                  </div>
-                  <p className="mt-2 text-xs text-slate-400">{preset.plan.rationale}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      onClick={() => activateTrainingPreset(preset.id)}
-                      className="rounded-full bg-white px-3 py-2 text-[10px] font-mono uppercase tracking-[0.18em] text-black"
-                    >
-                      Ativar manualmente
-                    </button>
-                    <button
-                      onClick={() => router.push(`/chat?q=${encodeURIComponent(`Ative o preset ${preset.name} no meu treino atual.`)}`)}
-                      className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.18em] text-slate-300"
-                    >
-                      Pedir para Anri ativar
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="rounded-2xl border border-white/5 bg-black/20 px-4 py-5 text-sm text-slate-500">
-                Nenhum preset salvo ainda. Quando um treino encaixar, guarda ele aqui.
+      {isPresetsOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-[#0a0e17] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#60a5fa]">Presets</p>
+                <h3 className="mt-2 text-2xl font-black uppercase tracking-tight text-white">Biblioteca de treino</h3>
               </div>
-            )}
+              <button
+                type="button"
+                onClick={() => setIsPresetsOpen(false)}
+                className="rounded-full border border-white/10 bg-white/5 p-2 text-slate-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <button
+                onClick={() => saveTrainingPreset(trainingPlan.title)}
+                className="rounded-full border border-[#1d4ed8]/30 bg-[#1d4ed8]/10 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.18em] text-[#60a5fa]"
+              >
+                Salvar treino atual
+              </button>
+            </div>
+
+            <div className="mt-4 max-h-[55vh] space-y-3 overflow-y-auto pr-1 no-scrollbar">
+              {trainingPresets.length > 0 ? (
+                trainingPresets.map((preset) => (
+                  <div key={preset.id} className="rounded-2xl border border-white/5 bg-white/[0.03] p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-bold text-white">{preset.name}</p>
+                        <p className="mt-1 text-[11px] font-mono uppercase tracking-[0.18em] text-slate-500">
+                          {preset.plan.focus}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removeTrainingPreset(preset.id)}
+                        className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500"
+                      >
+                        remover
+                      </button>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-400">{preset.plan.rationale}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => {
+                          activateTrainingPreset(preset.id);
+                          setIsPresetsOpen(false);
+                        }}
+                        className="rounded-full bg-white px-3 py-2 text-[10px] font-mono uppercase tracking-[0.18em] text-black"
+                      >
+                        Ativar manualmente
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsPresetsOpen(false);
+                          router.push(`/chat?q=${encodeURIComponent(`Ative o preset ${preset.name} no meu treino atual.`)}`);
+                        }}
+                        className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.18em] text-slate-300"
+                      >
+                        Pedir para Anri ativar
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-white/5 bg-black/20 px-4 py-5 text-sm text-slate-500">
+                  Nenhum preset salvo ainda. Quando um treino encaixar, guarda ele aqui.
+                </div>
+              )}
+            </div>
           </div>
         </div>
+      )}
 
-        <div className="rounded-3xl border border-white/10 bg-[#0a0e17] p-5">
-          <p className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#60a5fa]">Preferências da Anri</p>
-          <h3 className="mt-2 text-lg font-bold uppercase tracking-tight text-white">Como Bernardo quer treinar</h3>
-          <p className="mt-2 text-sm text-slate-400">
-            A rotina diária e os ajustes da Anri passam a usar essas preferências.
-          </p>
+      {isPreferencesOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-[#0a0e17] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#60a5fa]">Preferências da Anri</p>
+                <h3 className="mt-2 text-2xl font-black uppercase tracking-tight text-white">Como Bernardo quer treinar</h3>
+                <p className="mt-2 text-sm text-slate-400">
+                  A rotina diária e os ajustes da Anri passam a usar essas preferências.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPreferencesOpen(false)}
+                className="rounded-full border border-white/10 bg-white/5 p-2 text-slate-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {focusOptions.map((option) => {
-              const isActive = preferences.preferredFocuses.includes(option.id);
-              return (
-                <button
-                  key={option.id}
-                  onClick={() =>
-                    setPreferences({
-                      preferredFocuses: isActive
-                        ? preferences.preferredFocuses.filter((focus) => focus !== option.id)
-                        : [...preferences.preferredFocuses, option.id],
-                    })
-                  }
-                  className={`rounded-full px-3 py-2 text-[10px] font-mono uppercase tracking-[0.18em] transition-colors ${
-                    isActive
-                      ? 'bg-[#1d4ed8] text-white'
-                      : 'border border-white/10 bg-white/5 text-slate-400'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
+            <div className="mt-5 max-h-[55vh] overflow-y-auto pr-1 no-scrollbar">
+              <div className="flex flex-wrap gap-2">
+                {focusOptions.map((option) => {
+                  const isActive = preferences.preferredFocuses.includes(option.id);
+                  return (
+                    <button
+                      key={option.id}
+                      onClick={() =>
+                        setPreferences({
+                          preferredFocuses: isActive
+                            ? preferences.preferredFocuses.filter((focus) => focus !== option.id)
+                            : [...preferences.preferredFocuses, option.id],
+                        })
+                      }
+                      className={`rounded-full px-3 py-2 text-[10px] font-mono uppercase tracking-[0.18em] transition-colors ${
+                        isActive
+                          ? 'bg-[#1d4ed8] text-white'
+                          : 'border border-white/10 bg-white/5 text-slate-400'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3">
-            <div>
-              <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-slate-500">Estilo da sessão</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {[
-                  { id: 'balanced', label: 'Balanceado' },
-                  { id: 'aggressive', label: 'Agressivo' },
-                  { id: 'recovery', label: 'Recuperação' },
-                ].map((style) => (
+              <div className="mt-4 grid grid-cols-1 gap-3">
+                <div>
+                  <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-slate-500">Estilo da sessão</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {[
+                      { id: 'balanced', label: 'Balanceado' },
+                      { id: 'aggressive', label: 'Agressivo' },
+                      { id: 'recovery', label: 'Recuperação' },
+                    ].map((style) => (
+                      <button
+                        key={style.id}
+                        onClick={() => setPreferences({ sessionStyle: style.id as typeof preferences.sessionStyle })}
+                        className={`rounded-full px-3 py-2 text-[10px] font-mono uppercase tracking-[0.18em] ${
+                          preferences.sessionStyle === style.id
+                            ? 'bg-white text-black'
+                            : 'border border-white/10 bg-white/5 text-slate-400'
+                        }`}
+                      >
+                        {style.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                  <div>
+                    <p className="text-sm font-bold text-white">Preferir outdoor quando der</p>
+                    <p className="text-xs text-slate-500">Se chover, a Anri recua para protocolos mais seguros.</p>
+                  </div>
                   <button
-                    key={style.id}
-                    onClick={() => setPreferences({ sessionStyle: style.id as typeof preferences.sessionStyle })}
+                    onClick={() => setPreferences({ prefersOutdoor: !preferences.prefersOutdoor })}
                     className={`rounded-full px-3 py-2 text-[10px] font-mono uppercase tracking-[0.18em] ${
-                      preferences.sessionStyle === style.id
-                        ? 'bg-white text-black'
+                      preferences.prefersOutdoor
+                        ? 'bg-emerald-400/20 text-emerald-300'
                         : 'border border-white/10 bg-white/5 text-slate-400'
                     }`}
                   >
-                    {style.label}
+                    {preferences.prefersOutdoor ? 'Ligado' : 'Desligado'}
                   </button>
-                ))}
+                </div>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
-              <div>
-                <p className="text-sm font-bold text-white">Preferir outdoor quando der</p>
-                <p className="text-xs text-slate-500">Se chover, a Anri recua para protocolos mais seguros.</p>
-              </div>
-              <button
-                onClick={() => setPreferences({ prefersOutdoor: !preferences.prefersOutdoor })}
-                className={`rounded-full px-3 py-2 text-[10px] font-mono uppercase tracking-[0.18em] ${
-                  preferences.prefersOutdoor
-                    ? 'bg-emerald-400/20 text-emerald-300'
-                    : 'border border-white/10 bg-white/5 text-slate-400'
-                }`}
-              >
-                {preferences.prefersOutdoor ? 'Ligado' : 'Desligado'}
-              </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
