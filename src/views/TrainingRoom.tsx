@@ -397,6 +397,8 @@ export default function TrainingRoom() {
           </div>
         </div>
       )}
+      {/* Bottom Spacer for Mobile Scroll */}
+      <div className="h-32 md:hidden" aria-hidden="true" />
     </div>
   );
 }
