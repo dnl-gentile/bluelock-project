@@ -211,7 +211,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex justify-center rounded-2xl border border-white/5 bg-black/20 px-4 py-8">
+          <div className="flex justify-center py-4">
             <TrainingRankBadge
               position={performance.leaderboardPosition}
               level={performance.level}
