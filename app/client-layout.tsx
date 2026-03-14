@@ -61,7 +61,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const isChat = pathname === '/chat';
 
   return (
-    <div className="flex flex-col md:flex-col-reverse min-h-screen relative overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/40 via-[#050505] to-[#050505]">
+    <div className="flex flex-col md:flex-col-reverse h-[100dvh] relative overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/40 via-[#050505] to-[#050505]">
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[#1d4ed8] rounded-full mix-blend-screen filter blur-[150px] opacity-10 animate-pulse pointer-events-none" />
       <div className="absolute bottom-[20%] right-[-10%] w-96 h-96 bg-[#ff003c] rounded-full mix-blend-screen filter blur-[150px] opacity-10 pointer-events-none" />
 

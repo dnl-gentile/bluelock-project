@@ -254,7 +254,7 @@ export default function Home() {
             </div>
 
             <div className="rounded-[28px] border border-white/5 bg-black/20 p-4">
-              <div className="h-[300px] md:h-[340px]">
+              <div className="h-[300px] md:h-[340px] w-full min-h-[300px] relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarData}>
                     <PolarGrid stroke="rgba(255,255,255,0.1)" />

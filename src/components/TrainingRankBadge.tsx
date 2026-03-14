@@ -10,8 +10,8 @@ export default function TrainingRankBadge({
   className = '',
 }: TrainingRankBadgeProps) {
   return (
-    <div className={`relative aspect-[0.88] w-[160px] ${className}`}>
-      <svg viewBox="0 0 200 228" className="h-full w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.3)]">
+    <div className={`relative shrink-0 ${className}`}>
+      <svg viewBox="0 0 200 228" className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.3)]">
         <polygon
           points="100,12 184,74 166,220 34,220 16,74"
           fill="#f8fafc"
