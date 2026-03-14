@@ -72,3 +72,25 @@
 .animate-pulse-neon {
   animation: pulse-neon 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+@keyframes blue-lock-piece-charge {
+  0% {
+    fill: var(--blue-lock-piece-light, #60a5fa);
+  }
+
+  16%,
+  100% {
+    fill: var(--blue-lock-piece-base, #1d4ed8);
+  }
+}
+
+.blue-lock-piece--animated {
+  animation: blue-lock-piece-charge var(--blue-lock-duration, 1800ms) cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blue-lock-piece--animated {
+    animation: none;
+    fill: var(--blue-lock-piece-base, #1d4ed8);
+  }
+}

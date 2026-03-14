@@ -12,6 +12,8 @@ interface ChatMessage {
   };
 }
 
+const anriAvatarImageClass = 'h-full w-full rounded-full object-cover object-[center_18%] scale-[0.9] transform-gpu';
+
 export default function AICoachChat() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -75,10 +77,15 @@ export default function AICoachChat() {
         <button onClick={() => router.back()} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
           <ArrowLeft className="w-5 h-5 text-slate-300" />
         </button>
-        <img src="/anri.jpg" alt="Anri" className="w-10 h-10 rounded-full border-2 border-[#1d4ed8] object-cover" />
+        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-[#1d4ed8] bg-[#151922] p-[2px]">
+          <img src="/anri.jpg" alt="Anri" className={anriAvatarImageClass} />
+        </div>
         <div>
           <h1 className="text-xl font-bold font-display uppercase tracking-wider text-white">Anri</h1>
-          <p className="text-xs font-mono text-slate-500 uppercase">Status: Online</p>
+          <p className="flex items-center gap-2 text-xs font-mono text-slate-500 uppercase">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
+            <span>Status: Online</span>
+          </p>
         </div>
       </div>
 
@@ -88,9 +95,9 @@ export default function AICoachChat() {
           const isAI = msg.sender === 'ai';
           return (
             <div key={msg.id} className={`flex gap-3 ${isAI ? 'flex-row' : 'flex-row-reverse'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${isAI ? 'border border-[#1d4ed8]/50' : 'bg-white/10'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${isAI ? 'border border-[#1d4ed8]/50 bg-[#151922] p-[1.5px]' : 'bg-white/10'}`}>
                 {isAI ? (
-                  <img src="/anri.jpg" alt="Anri" className="w-full h-full object-cover" />
+                  <img src="/anri.jpg" alt="Anri" className={anriAvatarImageClass} />
                 ) : (
                   <User className="w-4 h-4 text-slate-300" />
                 )}

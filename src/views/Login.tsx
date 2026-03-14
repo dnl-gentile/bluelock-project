@@ -66,9 +66,12 @@ export default function Login() {
     <div className="flex flex-col items-center justify-center min-h-[80vh] w-full max-w-md mx-auto space-y-8 px-4">
       <div className="text-center space-y-4">
         <div className="mb-6 flex items-center justify-center">
-          <div className="flex h-28 w-28 items-center justify-center rounded-[2rem] border border-[#1d4ed8]/25 bg-[radial-gradient(circle_at_top,_rgba(96,165,250,0.18),_rgba(10,14,23,0.96)_72%)] shadow-[0_0_32px_rgba(29,78,216,0.24)]">
-            <BlueLockLogo size={88} />
-          </div>
+          <BlueLockLogo
+            size={96}
+            animated
+            durationMs={2200}
+            className="drop-shadow-[0_0_28px_rgba(29,78,216,0.28)]"
+          />
         </div>
         <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#1d4ed8] to-[#3b82f6] uppercase tracking-tighter">
           Blue Lock

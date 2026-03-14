@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <mask id="blue-lock-cutout" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
+      <rect width="100" height="100" fill="white" />
+      <path d="M50 38 L62 48 L52 65 L48 65 L38 48 Z" fill="black" />
+    </mask>
+  </defs>
+
+  <g mask="url(#blue-lock-cutout)" fill="#1d4ed8">
+    <path d="M50 5 L62 30 L50 38 L38 30 Z" />
+    <path d="M62 30 L90 22 L85 52 L62 48 Z" />
+    <path d="M85 52 L75 80 L52 65 L62 48 Z" />
+    <path d="M48 65 L25 80 L15 52 L38 48 Z" />
+    <path d="M10 22 L38 30 L38 48 L15 52 Z" />
+  </g>
+</svg>

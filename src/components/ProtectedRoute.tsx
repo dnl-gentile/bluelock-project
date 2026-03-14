@@ -26,7 +26,11 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh] w-full">
-        <BlueLockLogo size={48} className="animate-pulse" />
+        <BlueLockLogo
+          size={56}
+          animated
+          className="drop-shadow-[0_0_24px_rgba(59,130,246,0.2)]"
+        />
         <p className="mt-4 text-[#1d4ed8] font-mono animate-pulse">CARREGANDO PROTOCOLOS...</p>
       </div>
     );
