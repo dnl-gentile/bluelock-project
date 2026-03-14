@@ -1,13 +1,27 @@
-import { Navigate, Outlet } from 'react-router-dom';
+'use client';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useAuth, type UserRole } from '../lib/AuthContext';
 import { Bot } from 'lucide-react';
 
 interface ProtectedRouteProps {
   allowedRoles?: UserRole[];
+  children: React.ReactNode;
 }
 
-export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
+export default function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) {
   const { user, profile, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user || !profile) {
+        router.replace('/login');
+      } else if (allowedRoles && !allowedRoles.includes(profile.role)) {
+        router.replace(profile.role === 'coach' ? '/coach' : '/');
+      }
+    }
+  }, [loading, user, profile, allowedRoles, router]);
 
   if (loading) {
     return (
@@ -18,14 +32,8 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     );
   }
 
-  if (!user || !profile) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!user || !profile) return null;
+  if (allowedRoles && !allowedRoles.includes(profile.role)) return null;
 
-  if (allowedRoles && !allowedRoles.includes(profile.role)) {
-    // Se for pai querendo acessar área de filho, ou filho querendo acessar área de pai
-    return <Navigate to={profile.role === 'coach' ? '/coach' : '/'} replace />;
-  }
-
-  return <Outlet />;
+  return <>{children}</>;
 }

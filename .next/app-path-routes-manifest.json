@@ -1,0 +1,12 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/chat/page": "/chat",
+  "/coach/page": "/coach",
+  "/drill/[id]/page": "/drill/[id]",
+  "/login/page": "/login",
+  "/page": "/",
+  "/skills/page": "/skills",
+  "/training/page": "/training",
+  "/wiki/page": "/wiki"
+}

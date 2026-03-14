@@ -1,26 +1,34 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, type Auth } from 'firebase/auth';
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "demo-key",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "demo.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "demo-project",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
-};
+// Firebase App Hosting injects FIREBASE_WEBAPP_CONFIG at build time
+// Fall back to individual NEXT_PUBLIC_* env vars for local dev
+function getFirebaseConfig() {
+  if (typeof process !== 'undefined' && process.env.FIREBASE_WEBAPP_CONFIG) {
+    try {
+      return JSON.parse(process.env.FIREBASE_WEBAPP_CONFIG);
+    } catch {}
+  }
+  return {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  };
+}
 
-let app, db: Firestore | undefined, auth: Auth | undefined;
+let db: Firestore | undefined, auth: Auth | undefined;
 
 try {
-  app = initializeApp(firebaseConfig);
+  const app = getApps().length === 0 ? initializeApp(getFirebaseConfig()) : getApps()[0];
   db = getFirestore(app);
   auth = getAuth(app);
-  console.log('Firebase initialized');
 } catch (error) {
-  console.error("Firebase init error", error);
+  console.error('Firebase init error', error);
 }
 
 export { db, auth };
