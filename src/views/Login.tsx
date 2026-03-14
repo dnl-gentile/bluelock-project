@@ -61,13 +61,15 @@ export default function Login() {
     <div className="flex flex-col items-center justify-center min-h-[80vh] w-full max-w-md mx-auto space-y-8 px-4">
       <div className="text-center space-y-4">
         <div className="mb-6 flex items-center justify-center">
-          <img
-            src="/android-chrome-192x192.png"
-            alt="Blue Lock"
-            width={96}
-            height={96}
-            className="rounded-2xl drop-shadow-[0_0_24px_rgba(29,78,216,0.8)]"
-          />
+          <div className="w-24 h-24 rounded-full overflow-hidden shadow-[0_0_32px_rgba(29,78,216,0.7)] ring-2 ring-[#1d4ed8]/40">
+            <img
+              src="/android-chrome-192x192.png"
+              alt="Blue Lock"
+              width={96}
+              height={96}
+              className="w-full h-full object-cover"
+            />
+          </div>
         </div>
         <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#1d4ed8] to-[#3b82f6] uppercase tracking-tighter">
           Blue Lock
