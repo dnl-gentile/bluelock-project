@@ -112,7 +112,26 @@ export default function SkillsRoom() {
   return (
     <div className="w-full flex-1 relative bg-[#050505] overflow-hidden">
       {/* UI Overlay */}
-      <div className="absolute top-6 left-6 z-50 pointer-events-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] pt-4 max-w-sm">
+      <div className="absolute inset-x-0 top-4 z-50 px-4 pointer-events-none md:hidden">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">
+            <h1 className="max-w-[8ch] text-[1.9rem] leading-[0.92] font-black text-transparent bg-clip-text bg-gradient-to-r from-[#1d4ed8] to-[#3b82f6] uppercase tracking-tight text-shadow-neon">
+              Árvore do Ego
+            </h1>
+          </div>
+          <div className="shrink-0 rounded-2xl border border-white/5 bg-[#0a0e17]/88 px-3 py-2 shadow-2xl backdrop-blur-md box-shadow-neon">
+            <div className="flex flex-col items-end">
+              <span className="text-[9px] text-slate-400 font-mono tracking-[0.24em] uppercase mb-1">XP Disponível</span>
+              <span className="text-[1.75rem] leading-none font-black text-[#1d4ed8] drop-shadow-[0_0_15px_rgba(29,78,216,0.8)]">{xp} XP</span>
+            </div>
+          </div>
+        </div>
+        <p className="mt-3 max-w-[14.5rem] rounded-lg bg-black/45 px-2.5 py-2 text-[11px] leading-tight text-slate-400 backdrop-blur">
+          Arraste a teia livremente pelas zonas. As linhas horizontais representam o avanço de Rank.
+        </p>
+      </div>
+
+      <div className="absolute top-6 left-6 z-50 hidden md:block pointer-events-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] pt-4 max-w-sm">
         <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#1d4ed8] to-[#3b82f6] uppercase tracking-tighter text-shadow-neon">
           Árvore do Ego
         </h1>
@@ -121,7 +140,7 @@ export default function SkillsRoom() {
         </p>
       </div>
       
-      <div className="absolute top-6 right-6 z-50 pointer-events-none pt-4">
+      <div className="absolute top-6 right-6 z-50 hidden md:block pointer-events-none pt-4">
         <div className="flex flex-col items-end px-4 bg-[#0a0e17]/80 backdrop-blur-md py-3 rounded-2xl border border-white/5 box-shadow-neon pointer-events-auto shadow-2xl">
            <span className="text-[10px] text-slate-400 font-mono tracking-widest uppercase mb-1">XP Disponível</span>
            <span className="text-2xl font-black text-[#1d4ed8] drop-shadow-[0_0_15px_rgba(29,78,216,0.8)]">{xp} XP</span>
