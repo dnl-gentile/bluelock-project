@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Lock, PlayCircle, Star } from 'lucide-react';
+import { Lock, PlayCircle, Star, LogOut } from 'lucide-react';
+import { useAuth } from '../lib/AuthContext';
 
 const FASES = [
   {
@@ -33,6 +34,8 @@ const FASES = [
 ];
 
 export default function MapPage() {
+  const { logout } = useAuth();
+
   return (
     <div className="flex flex-col items-center max-w-2xl mx-auto space-y-12 py-10">
       <div className="text-center space-y-2">
@@ -97,6 +100,16 @@ export default function MapPage() {
           </motion.div>
         ))}
       </div>
+
+      {/* Logout */}
+      <button
+        onClick={logout}
+        className="flex items-center gap-3 px-6 py-3 rounded-2xl border border-red-500/20 text-red-400/60 hover:text-red-400 hover:border-red-500/50 hover:bg-red-500/10 transition-all font-mono text-sm uppercase tracking-widest"
+      >
+        <LogOut className="w-4 h-4" />
+        Sair da Conta
+      </button>
+
     </div>
   );
 }

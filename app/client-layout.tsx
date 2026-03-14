@@ -63,17 +63,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[#1d4ed8] rounded-full mix-blend-screen filter blur-[150px] opacity-10 animate-pulse pointer-events-none" />
       <div className="absolute bottom-[20%] right-[-10%] w-96 h-96 bg-[#ff003c] rounded-full mix-blend-screen filter blur-[150px] opacity-10 pointer-events-none" />
 
-      {profile && pathname !== '/login' && (
-        <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
-          <button
-            onClick={logout}
-            className="flex items-center gap-2 px-3 py-2 bg-black/40 border border-white/10 rounded-full hover:bg-white/10 transition-colors group"
-          >
-            <UserCircle className="w-5 h-5 text-slate-400 group-hover:text-red-400" />
-            <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-red-400 font-mono tracking-widest hidden md:inline">Sair</span>
-          </button>
-        </div>
-      )}
 
       <main className={`flex-1 w-full relative z-10 overflow-y-auto overflow-x-hidden ${isSkills ? 'max-w-none p-0 flex flex-col' : 'max-w-5xl mx-auto px-4 py-8 pb-24 md:pb-8'}`}>
         {children}
