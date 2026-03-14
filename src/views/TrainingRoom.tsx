@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, CheckCircle2, ChevronDown, ChevronUp, ClipboardList, Target } from 'lucide-react';
+import { Play, CheckCircle2, ChevronDown, ChevronUp, MessageSquare, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -48,7 +48,6 @@ const MOCK_DRILLS = [
 
 export default function TrainingRoom() {
   const [expandedDrill, setExpandedDrill] = useState<number | null>(MOCK_DRILLS[0].id);
-  const [chatInput, setChatInput] = useState('');
   const router = useRouter();
 
   const todayStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -152,35 +151,24 @@ export default function TrainingRoom() {
             <p className="text-white/70 text-sm mt-1">Tempo Est.: 15 min</p>
           </Link>
 
-          <div className="bg-[#0a0e17] rounded-3xl border border-white/5 p-5">
-            <div className="flex items-center gap-2 mb-4 text-[#1d4ed8]">
-              <ClipboardList className="w-5 h-5" />
-              <h3 className="text-sm font-mono tracking-widest uppercase font-bold">Ajuste de Treino (Ego)</h3>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed mb-4">
-              Anri está processando seus dados para o Ego. Deseja focar em outro fundamento hoje ou encontrou alguma dor muscular?
+          <div className="pt-2">
+            <p className="text-slate-400 font-mono text-xs uppercase mb-3 text-center">
+              Quer recalibrar o protocolo de hoje?
             </p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input 
-                type="text" 
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Ex: Quero drible..."
-                className="w-full sm:flex-1 bg-[#050505] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-[#1d4ed8] font-mono text-sm"
-              />
-              <button 
-                className="shrink-0 bg-[#162032] border border-white/10 hover:border-[#1d4ed8]/50 text-white rounded-xl px-4 py-2 sm:py-0 text-xs font-bold uppercase transition-colors"
-                onClick={() => {
-                  if (chatInput.trim()) {
-                    router.push(`/chat?q=${encodeURIComponent(chatInput)}`);
-                  } else {
-                    router.push('/chat');
-                  }
-                }}
-              >
-                Refatorar
-              </button>
-            </div>
+            <button
+              onClick={() => router.push('/chat?q=Quero ajustar meu treino de hoje.')}
+              className="w-full bg-[#162032] border border-[#1d4ed8]/30 hover:border-[#1d4ed8] rounded-2xl p-4 flex items-center justify-center gap-3 transition-colors box-shadow-neon"
+            >
+              <MessageSquare className="w-6 h-6 text-[#1d4ed8]" />
+              <div className="text-left">
+                <span className="block font-bold text-sm tracking-widest text-white uppercase">
+                  Solicitar alteração para Anri
+                </span>
+                <span className="block text-xs text-slate-400">
+                  Peça para Anri ajustar foco, carga ou adaptar o treino de hoje.
+                </span>
+              </div>
+            </button>
           </div>
         </div>
 

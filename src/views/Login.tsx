@@ -69,6 +69,7 @@ export default function Login() {
           <BlueLockLogo
             size={96}
             animated
+            animationStyle="pulse"
             durationMs={2200}
             className="drop-shadow-[0_0_28px_rgba(29,78,216,0.28)]"
           />
