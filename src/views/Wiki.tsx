@@ -121,7 +121,7 @@ export default function Wiki() {
                                   {entry.drillId && <span className="text-[10px] uppercase font-bold px-2 py-1 rounded bg-[#1d4ed8]/20 text-[#1d4ed8]">Prática Disp.</span>}
                                 </div>
                                 {entry.drillId && (
-                                  <Link to={`/drill/${entry.drillId}`} className="flex items-center gap-2 bg-[#ff003c] px-4 py-2 rounded-xl text-white hover:brightness-110 transition-all font-bold text-xs uppercase">
+                                  <Link href={`/drill/${entry.drillId}`} className="flex items-center gap-2 bg-[#ff003c] px-4 py-2 rounded-xl text-white hover:brightness-110 transition-all font-bold text-xs uppercase">
                                     <Play className="w-3 h-3 fill-white" /> Treinar
                                   </Link>
                                 )}
@@ -143,8 +143,8 @@ export default function Wiki() {
             <button onClick={() => router.push('/chat?q=Quero adiconar uma entrada no Wiki')} className="w-full max-w-lg mx-auto bg-[#162032] border border-[#1d4ed8]/30 hover:border-[#1d4ed8] rounded-2xl p-4 flex items-center justify-center gap-3 transition-colors box-shadow-neon">
               <Bot className="w-6 h-6 text-[#1d4ed8]" />
               <div className="text-left">
-                <span className="block font-bold text-sm tracking-widest text-white uppercase">Criar via Blue Lockman (IA)</span>
-                <span className="block text-xs text-slate-400">Pede para a IA gerar uma nova técnica na Bluelockpedia.</span>
+                <span className="block font-bold text-sm tracking-widest text-white uppercase">Solicitar a Anri (Assistente)</span>
+                <span className="block text-xs text-slate-400">Pede para Anri gerar uma nova técnica na Bluelockpedia.</span>
               </div>
             </button>
           </div>

@@ -21,7 +21,7 @@ export default function AICoachChat() {
     {
       id: '1',
       sender: 'ai',
-      text: 'Olá! Sou o Blue Lockman. Precisa alterar a carga do treino, trocar o foco para outro fundamento, ou quer perguntar algo para a Bluelockpedia?'
+      text: 'Olá! Eu sou a Anri, assistente do Ego. Precisa alterar a carga do treino, trocar o foco para outro fundamento, ou quer perguntar algo para a Bluelockpedia?'
     }
   ]);
   const [input, setInput] = useState('');
@@ -72,12 +72,12 @@ export default function AICoachChat() {
     <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)] max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 py-4 border-b border-white/5 shrink-0">
-        <button onClick={() => router.push(-1)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
+        <button onClick={() => router.back()} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
           <ArrowLeft className="w-5 h-5 text-slate-300" />
         </button>
         <Bot className="w-8 h-8 text-[#1d4ed8]" />
         <div>
-          <h1 className="text-xl font-bold font-display uppercase tracking-wider text-white">Blue Lockman</h1>
+          <h1 className="text-xl font-bold font-display uppercase tracking-wider text-white">Anri</h1>
           <p className="text-xs font-mono text-slate-500 uppercase">Status: Online</p>
         </div>
       </div>

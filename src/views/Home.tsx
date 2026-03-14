@@ -245,7 +245,7 @@ export default function Home() {
           </div>
           <div className="text-left flex-1">
             <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Treino Diário</h2>
-            <p className="text-sm text-slate-400">Verifique o protocolo gerado pela IA e inicie os exercícios.</p>
+            <p className="text-sm text-slate-400">Verifique o protocolo gerado pelo Ego e inicie os exercícios.</p>
           </div>
           <div className="hidden md:flex w-12 h-12 rounded-full bg-white/5 items-center justify-center group-hover:bg-[#1d4ed8]/20 transition-colors">
             <ChevronRight className="w-6 h-6 text-[#1d4ed8]" />

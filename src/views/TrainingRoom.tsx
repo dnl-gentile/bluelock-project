@@ -155,10 +155,10 @@ export default function TrainingRoom() {
           <div className="bg-[#0a0e17] rounded-3xl border border-white/5 p-5">
             <div className="flex items-center gap-2 mb-4 text-[#1d4ed8]">
               <MessageSquare className="w-5 h-5" />
-              <h3 className="text-sm font-mono tracking-widest uppercase font-bold">Ajuste de Treino (IA)</h3>
+              <h3 className="text-sm font-mono tracking-widest uppercase font-bold">Ajuste de Treino (Ego)</h3>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
-              O Blue Lockman está rodando em segundo plano. Deseja focar em outro fundamento hoje ou encontrou alguma dor muscular?
+              Anri está processando seus dados para o Ego. Deseja focar em outro fundamento hoje ou encontrou alguma dor muscular?
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <input 
