@@ -85,9 +85,10 @@ export default function Home() {
       </div>
 
       {/* Center Layout For Widget And Radar */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-6 items-start">
+        {/* Coluna 1 */}
         <div className="flex flex-col gap-4">
-          <div className="bg-gradient-to-br from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-[#1d4ed8]/20 relative overflow-hidden min-h-[210px]">
+          <div className="bg-gradient-to-br from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-[#1d4ed8]/20 relative overflow-hidden min-h-[210px] flex flex-col justify-center">
             <Zap className="absolute top-4 right-4 w-24 h-24 text-[#1d4ed8] opacity-5 -rotate-12" />
             <h3 className="text-xs text-[#1d4ed8] font-mono tracking-widest uppercase mb-3">Mensagem do Dia</h3>
             <p className="max-w-[90%] text-lg md:text-xl font-medium italic text-white">
@@ -95,6 +96,65 @@ export default function Home() {
             </p>
           </div>
 
+          <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10 flex flex-col gap-4">
+            <div className="flex items-center gap-2 mb-2">
+              <UserSquare className="w-5 h-5 text-[#1d4ed8]" />
+              <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Ficha Pessoal</h2>
+            </div>
+
+            <div className="flex items-start gap-4 rounded-2xl border border-white/5 bg-black/20 p-4">
+              {profile?.photoURL && (
+                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#1d4ed8]/30 bg-[#151922] p-[2px]">
+                  <img
+                    src={profile.photoURL}
+                    alt={profile.name}
+                    className="h-full w-full rounded-[14px] object-cover object-center"
+                  />
+                </div>
+              )}
+              <div className="min-w-0">
+                <h3 className="text-xl font-black uppercase tracking-tight text-white">{profile?.name || 'Bernardo'}</h3>
+                <p className="mt-1 text-[11px] font-mono uppercase tracking-[0.16em] text-[#1d4ed8]">
+                  {age} anos · {athleteStageLabel}
+                </p>
+                {athleteStageDetail ? (
+                  <p className="mt-1 text-xs font-mono uppercase tracking-[0.14em] text-slate-500">
+                    {athleteStageDetail}
+                  </p>
+                ) : null}
+                <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                  {dailyBriefing?.subheadline || 'A Anri ainda está lendo o seu ritmo do dia.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-center rounded-2xl border border-white/5 bg-black/20 px-4 py-8">
+              <TrainingRankBadge
+                position={performance.leaderboardPosition}
+                level={performance.level}
+                className="w-48 max-w-[80%]"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
+                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Dias treinados</p>
+                <p className="mt-1 text-lg font-black text-white">{performance.totalTrainingDays}</p>
+              </div>
+              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
+                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Armas abertas</p>
+                <p className="mt-1 text-lg font-black text-white">{performance.unlockedSkills}</p>
+              </div>
+              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
+                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Posição</p>
+                <p className="mt-1 text-lg font-black text-white">#{performance.leaderboardPosition}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Coluna 2 */}
+        <div className="flex flex-col gap-4">
           <div
             className="bg-[#050505] p-6 rounded-3xl border border-[#ff003c]/30 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer transition-colors hover:border-[#ff003c]/70 min-h-[220px]"
             onClick={() => setViewMode(viewMode === 'streak' ? 'calendar' : 'streak')}
@@ -176,69 +236,6 @@ export default function Home() {
               )}
             </AnimatePresence>
           </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10">
-            <div className="flex items-center gap-2 mb-4">
-              <UserSquare className="w-5 h-5 text-[#1d4ed8]" />
-              <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Ficha Pessoal</h2>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-              <div className="min-w-0 rounded-2xl border border-white/5 bg-black/20 p-4">
-                <div className="flex items-start gap-4">
-                  {profile?.photoURL && (
-                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#1d4ed8]/30 bg-[#151922] p-[2px]">
-                      <img
-                        src={profile.photoURL}
-                        alt={profile.name}
-                        className="h-full w-full rounded-[14px] object-cover object-center"
-                      />
-                    </div>
-                  )}
-
-                  <div className="min-w-0">
-                    <h3 className="text-xl font-black uppercase tracking-tight text-white">{profile?.name || 'Bernardo'}</h3>
-                    <p className="mt-1 text-[11px] font-mono uppercase tracking-[0.16em] text-[#1d4ed8]">
-                      {age} anos · {athleteStageLabel}
-                    </p>
-                    {athleteStageDetail ? (
-                      <p className="mt-1 text-xs font-mono uppercase tracking-[0.14em] text-slate-500">
-                        {athleteStageDetail}
-                      </p>
-                    ) : null}
-                    <p className="mt-3 text-sm leading-relaxed text-slate-400">
-                      {dailyBriefing?.subheadline || 'A Anri ainda está lendo o seu ritmo do dia.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-center rounded-2xl border border-white/5 bg-black/20 px-4 py-3">
-                <TrainingRankBadge
-                  position={performance.leaderboardPosition}
-                  level={performance.level}
-                  className="w-[144px]"
-                />
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
-                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Dias treinados</p>
-                <p className="mt-1 text-lg font-black text-white">{performance.totalTrainingDays}</p>
-              </div>
-              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
-                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Armas abertas</p>
-                <p className="mt-1 text-lg font-black text-white">{performance.unlockedSkills}</p>
-              </div>
-              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
-                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Posição</p>
-                <p className="mt-1 text-lg font-black text-white">#{performance.leaderboardPosition}</p>
-              </div>
-            </div>
-          </div>
 
           <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10">
             <div className="flex items-center justify-between gap-3 mb-4">
@@ -264,6 +261,15 @@ export default function Home() {
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {radarData.map((d) => (
+                <div key={d.subject} className="rounded-2xl border border-white/5 bg-black/20 px-2 py-3 text-center flex flex-col items-center justify-center">
+                  <p className="text-[9px] font-mono uppercase tracking-[0.1em] text-slate-500 truncate w-full">{d.subject}</p>
+                  <p className="text-sm font-black text-white mt-1">{d.A}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>

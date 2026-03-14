@@ -51,15 +51,6 @@ export default function TrainingRoom() {
         </div>
         
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsPresetsOpen(true)}
-            className="flex items-center gap-2 rounded-xl border border-[#1d4ed8]/30 bg-[#162032] px-4 py-2 text-[11px] font-mono uppercase tracking-[0.18em] text-[#60a5fa]"
-          >
-            <Bookmark className="h-4 w-4" />
-            Presets
-          </button>
-          
           <div className="flex items-center gap-2 text-slate-400 bg-[#0a0e17] px-4 py-2 rounded-xl border border-white/5">
             <Target className="w-4 h-4 text-[#ff003c]" />
             <span className="text-sm font-mono uppercase tracking-widest text-[#ff003c]">Foco: {trainingPlan.focus}</span>
@@ -224,6 +215,15 @@ export default function TrainingRoom() {
             >
               <Settings2 className="h-4 w-4 text-[#60a5fa]" />
               Configurar Anri
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsPresetsOpen(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#1d4ed8]/30 bg-[#162032] px-4 py-3 text-[11px] font-mono uppercase tracking-[0.18em] text-[#60a5fa]"
+            >
+              <Bookmark className="h-4 w-4" />
+              Presets
             </button>
           </div>
         </div>

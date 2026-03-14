@@ -11,18 +11,18 @@ export default function TrainingRankBadge({
 }: TrainingRankBadgeProps) {
   return (
     <div className={`relative shrink-0 ${className}`}>
-      <svg viewBox="0 0 200 228" className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.3)]">
+      <svg viewBox="0 0 200 200" className="h-auto w-full drop-shadow-[0_18px_36px_rgba(0,0,0,0.3)]">
         <polygon
-          points="100,12 184,74 166,220 34,220 16,74"
+          points="100,10 190,85 160,190 40,190 10,85"
           fill="#f8fafc"
           stroke="#050505"
           strokeWidth="8"
           strokeLinejoin="round"
         />
-        <line x1="32" y1="112" x2="168" y2="112" stroke="#050505" strokeWidth="6" strokeLinecap="round" />
+        <line x1="22" y1="120" x2="178" y2="120" stroke="#050505" strokeWidth="6" strokeLinecap="round" />
         <text
           x="100"
-          y="87"
+          y="95"
           fill="#050505"
           fontSize="56"
           fontWeight="900"
@@ -34,12 +34,12 @@ export default function TrainingRankBadge({
         </text>
         <text
           x="100"
-          y="192"
+          y="180"
           fill="#050505"
-          fontSize="76"
+          fontSize="64"
           fontWeight="900"
           textAnchor="middle"
-          letterSpacing="-6"
+          letterSpacing="-3"
           fontFamily="Outfit, Inter, system-ui, sans-serif"
         >
           {level}
