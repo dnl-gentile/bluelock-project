@@ -50,19 +50,9 @@ export default function TrainingRoom() {
           <p className="text-[#1d4ed8] font-mono text-sm capitalize">{todayStr}</p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsPresetsOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#1d4ed8]/30 bg-[#162032] px-4 py-2 text-[11px] font-mono uppercase tracking-[0.18em] text-[#60a5fa]"
-          >
-            <Bookmark className="h-4 w-4" />
-            Presets
-          </button>
-          <div className="flex items-center gap-2 text-slate-400 bg-[#0a0e17] px-4 py-2 rounded-xl border border-white/5">
-            <Target className="w-4 h-4 text-[#ff003c]" />
-            <span className="text-sm font-mono uppercase tracking-widest text-[#ff003c]">Foco: {trainingPlan.focus}</span>
-          </div>
+        <div className="flex items-center gap-2 text-slate-400 bg-[#0a0e17] px-4 py-2 rounded-xl border border-white/5">
+          <Target className="w-4 h-4 text-[#ff003c]" />
+          <span className="text-sm font-mono uppercase tracking-widest text-[#ff003c]">Foco: {trainingPlan.focus}</span>
         </div>
       </div>
 
@@ -112,12 +102,25 @@ export default function TrainingRoom() {
             </div>
           )}
 
-          <p className="text-sm text-slate-500 font-mono tracking-widest uppercase mb-2">
-            {trainingPlan.source === 'anri' ? 'Protocolo calibrado pela Anri' : 'Protocolo gerado automático'}
-          </p>
-          <p className="text-sm text-slate-400">
-            {trainingPlan.rationale}
-          </p>
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm text-slate-500 font-mono tracking-widest uppercase mb-2">
+                {trainingPlan.source === 'anri' ? 'Protocolo calibrado pela Anri' : 'Protocolo gerado automático'}
+              </p>
+              <p className="text-sm text-slate-400">
+                {trainingPlan.rationale}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsPresetsOpen(true)}
+              className="inline-flex shrink-0 items-center gap-2 self-start rounded-xl border border-[#1d4ed8]/30 bg-[#162032] px-4 py-2 text-[11px] font-mono uppercase tracking-[0.18em] text-[#60a5fa]"
+            >
+              <Bookmark className="h-4 w-4" />
+              Presets
+            </button>
+          </div>
           
           {trainingPlan.drills.map((drill) => {
             const isExpanded = expandedDrill === drill.id;
@@ -193,7 +196,7 @@ export default function TrainingRoom() {
             <p className="text-white/70 text-sm mt-1">Tempo Est.: 15 min</p>
           </Link>
 
-          <div className="pt-2">
+          <div className="grid gap-3 pt-2">
             <p className="text-slate-400 font-mono text-xs uppercase mb-3 text-center">
               Quer recalibrar o protocolo de hoje?
             </p>
@@ -211,19 +214,17 @@ export default function TrainingRoom() {
                 </span>
               </div>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setIsPreferencesOpen(true)}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#0a0e17] px-4 py-3 text-[11px] font-mono uppercase tracking-[0.18em] text-slate-300"
+            >
+              <Settings2 className="h-4 w-4 text-[#60a5fa]" />
+              Configurar Anri
+            </button>
           </div>
         </div>
-      </div>
-
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => setIsPreferencesOpen(true)}
-          className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#0a0e17] px-4 py-3 text-[11px] font-mono uppercase tracking-[0.18em] text-slate-300"
-        >
-          <Settings2 className="h-4 w-4 text-[#60a5fa]" />
-          Configurar Anri
-        </button>
       </div>
 
       {isPresetsOpen && (

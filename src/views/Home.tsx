@@ -43,6 +43,8 @@ export default function Home() {
     fullMark: 100,
   }));
   const currentWeek = performance.streak.currentWeek;
+  const athleteStageLabel = stage.split(':')[0]?.trim() || stage;
+  const athleteStageDetail = stage.includes(':') ? stage.split(':').slice(1).join(':').trim() : '';
 
   const isIndoorProtocol = weather?.condition === 'Rain';
   const requestNotificationPermission = async () => {
@@ -176,41 +178,48 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10 flex flex-col items-center justify-start min-h-[420px]">
-          <div className="flex items-center gap-2 mb-2 w-full">
-            <UserSquare className="w-5 h-5 text-[#1d4ed8]" />
-            <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Matriz Pessoal</h2>
-          </div>
+        <div className="flex flex-col gap-4">
+          <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10">
+            <div className="flex items-center gap-2 mb-4">
+              <UserSquare className="w-5 h-5 text-[#1d4ed8]" />
+              <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Ficha Pessoal</h2>
+            </div>
 
-          <div className="w-full rounded-2xl border border-white/5 bg-black/20 p-4 mb-4">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-start gap-4">
-                {profile?.photoURL && (
-                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#1d4ed8]/30 bg-[#151922] p-[2px]">
-                    <img
-                      src={profile.photoURL}
-                      alt={profile.name}
-                      className="h-full w-full rounded-[14px] object-cover object-center"
-                    />
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+              <div className="min-w-0 rounded-2xl border border-white/5 bg-black/20 p-4">
+                <div className="flex items-start gap-4">
+                  {profile?.photoURL && (
+                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#1d4ed8]/30 bg-[#151922] p-[2px]">
+                      <img
+                        src={profile.photoURL}
+                        alt={profile.name}
+                        className="h-full w-full rounded-[14px] object-cover object-center"
+                      />
+                    </div>
+                  )}
+
+                  <div className="min-w-0">
+                    <h3 className="text-xl font-black uppercase tracking-tight text-white">{profile?.name || 'Bernardo'}</h3>
+                    <p className="mt-1 text-[11px] font-mono uppercase tracking-[0.16em] text-[#1d4ed8]">
+                      {age} anos · {athleteStageLabel}
+                    </p>
+                    {athleteStageDetail ? (
+                      <p className="mt-1 text-xs font-mono uppercase tracking-[0.14em] text-slate-500">
+                        {athleteStageDetail}
+                      </p>
+                    ) : null}
+                    <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                      {dailyBriefing?.subheadline || 'A Anri ainda está lendo o seu ritmo do dia.'}
+                    </p>
                   </div>
-                )}
-
-                <div className="min-w-0">
-                  <h3 className="text-lg font-black uppercase tracking-tight text-white">{profile?.name || 'Bernardo'}</h3>
-                  <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#1d4ed8]">
-                    {age} anos · {stage}
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                    {dailyBriefing?.subheadline || 'A Anri ainda está lendo o seu ritmo do dia.'}
-                  </p>
                 </div>
               </div>
 
-              <div className="flex justify-center">
+              <div className="flex justify-center rounded-2xl border border-white/5 bg-black/20 px-4 py-3">
                 <TrainingRankBadge
                   position={performance.leaderboardPosition}
                   level={performance.level}
-                  className="w-[148px]"
+                  className="w-[144px]"
                 />
               </div>
             </div>
@@ -231,20 +240,31 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="w-full flex-1 min-h-[240px] relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="68%" data={radarData}>
-                <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: '#1d4ed8', fontSize: 11, fontFamily: 'monospace' }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                <Radar name="Ego" dataKey="A" stroke="#1d4ed8" fill="#1d4ed8" fillOpacity={0.2} strokeWidth={2} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
+          <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2">
+                <UserSquare className="w-5 h-5 text-[#1d4ed8]" />
+                <div>
+                  <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Matriz Pessoal</h2>
+                  <p className="text-[11px] font-mono uppercase tracking-[0.16em] text-slate-500">
+                    Score geral {performance.overallScore}% · {performance.distinctDomains}/6 domínios
+                  </p>
+                </div>
+              </div>
+            </div>
 
-          <div className="w-full flex justify-between px-4 mt-2">
-            <span className="text-xs font-mono text-slate-500 uppercase">Classificação</span>
-            <span className="text-sm font-bold text-[#1d4ed8]">RANK {performance.level}</span>
+            <div className="rounded-[28px] border border-white/5 bg-black/20 p-4">
+              <div className="h-[300px] md:h-[340px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarData}>
+                    <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#1d4ed8', fontSize: 11, fontFamily: 'monospace' }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                    <Radar name="Ego" dataKey="A" stroke="#1d4ed8" fill="#1d4ed8" fillOpacity={0.2} strokeWidth={2} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
         </div>
       </div>
