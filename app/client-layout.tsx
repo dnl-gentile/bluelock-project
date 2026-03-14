@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { Compass, Swords, Trophy, BookOpen, Bot, Shield, UserCircle } from 'lucide-react';
+import BlueLockLogo from '../src/components/BlueLockLogo';
 
 function Navigation() {
   const pathname = usePathname();

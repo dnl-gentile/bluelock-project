@@ -1,17 +1,44 @@
 import { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { LogIn, UserPlus, Shield, Swords } from 'lucide-react';
+import { LogIn, UserPlus, Shield, Loader2 } from 'lucide-react';
+import BlueLockLogo from '../components/BlueLockLogo';
 
 export default function Login() {
   const { loginWithGoogle, loginAnonymously, user, profile, setRole } = useAuth();
   const [name, setName] = useState('');
-  
+  const [loading, setLoading] = useState<'google' | 'anon' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGoogle = async () => {
+    setError(null);
+    setLoading('google');
+    try {
+      await loginWithGoogle();
+    } catch (e: any) {
+      setError(e?.message || 'Erro ao entrar com Google');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleAnon = async () => {
+    setError(null);
+    setLoading('anon');
+    try {
+      await loginAnonymously();
+    } catch (e: any) {
+      setError(e?.message || 'Erro: o acesso anônimo pode estar desativado no Firebase Console.');
+    } finally {
+      setLoading(null);
+    }
+  };
+
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh] w-full max-w-md mx-auto space-y-8 px-4">
         <div className="text-center space-y-4">
-          <div className="w-24 h-24 mx-auto bg-gradient-to-br from-[#1d4ed8] to-[#3b82f6] rounded-full flex items-center justify-center box-shadow-neon animate-pulse-neon mb-6">
-            <Swords className="w-12 h-12 text-black" />
+          <div className="w-24 h-24 mx-auto bg-gradient-to-br from-[#1d4ed8] to-[#3b82f6] rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(29,78,216,0.5)] animate-pulse mb-6">
+            <BlueLockLogo size={52} className="text-white" />
           </div>
           <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#1d4ed8] to-[#3b82f6] uppercase tracking-tighter">
             Blue Lock
@@ -20,14 +47,21 @@ export default function Login() {
         </div>
 
         <div className="w-full space-y-4 bg-[#0a0e17] p-8 rounded-3xl border border-[#1d4ed8]/20">
+          {error && (
+            <div className="bg-red-900/30 border border-red-500/40 text-red-400 text-xs font-mono px-4 py-3 rounded-xl">
+              {error}
+            </div>
+          )}
+
           <button
-            onClick={loginWithGoogle}
-            className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-white text-black font-bold hover:bg-slate-200 transition-colors"
+            onClick={handleGoogle}
+            disabled={loading !== null}
+            className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-white text-black font-bold hover:bg-slate-200 transition-colors disabled:opacity-60"
           >
-            <LogIn className="w-5 h-5" />
+            {loading === 'google' ? <Loader2 className="w-5 h-5 animate-spin" /> : <LogIn className="w-5 h-5" />}
             Entrar com Google
           </button>
-          
+
           <div className="relative flex items-center py-2">
             <div className="flex-grow border-t border-slate-800"></div>
             <span className="flex-shrink-0 mx-4 text-slate-500 text-xs font-mono">OU</span>
@@ -35,10 +69,11 @@ export default function Login() {
           </div>
 
           <button
-            onClick={loginAnonymously}
-            className="w-full flex items-center justify-center gap-3 py-4 rounded-xl border border-slate-700 text-slate-300 font-medium hover:bg-slate-800 transition-colors"
+            onClick={handleAnon}
+            disabled={loading !== null}
+            className="w-full flex items-center justify-center gap-3 py-4 rounded-xl border border-slate-700 text-slate-300 font-medium hover:bg-slate-800 transition-colors disabled:opacity-60"
           >
-            <UserPlus className="w-5 h-5" />
+            {loading === 'anon' ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserPlus className="w-5 h-5" />}
             Acesso Rápido (Anônimo)
           </button>
         </div>
@@ -77,7 +112,7 @@ export default function Login() {
               className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#162032] to-[#0a0e17] border border-[#1d4ed8]/30 p-4 flex items-center gap-4 transition-all hover:border-[#1d4ed8] disabled:opacity-50"
             >
               <div className="w-12 h-12 rounded-full bg-[#1d4ed8]/10 flex items-center justify-center group-hover:bg-[#1d4ed8]/20 transition-colors">
-                <Swords className="w-6 h-6 text-[#1d4ed8]" />
+                <BlueLockLogo size={28} className="text-[#1d4ed8]" />
               </div>
               <div className="text-left">
                 <h3 className="text-white font-bold uppercase tracking-wider">O Egoísta (Filho)</h3>
