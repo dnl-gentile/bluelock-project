@@ -44,8 +44,8 @@ function getGeminiEndpoint(model: string) {
 
 const ANRI_PLAN_SCHEMA = {
   type: 'object',
-  required: ['intent', 'rationale', 'responseBrief', 'priorities', 'trainingPlan', 'wikiEntries', 'skillTreeEntries'],
-  propertyOrdering: ['intent', 'rationale', 'responseBrief', 'priorities', 'trainingPlan', 'wikiEntries', 'skillTreeEntries'],
+  required: ['intent', 'rationale', 'responseBrief', 'priorities', 'trainingPlan', 'trainingDirective', 'wikiEntries', 'skillTreeEntries'],
+  propertyOrdering: ['intent', 'rationale', 'responseBrief', 'priorities', 'trainingPlan', 'trainingDirective', 'wikiEntries', 'skillTreeEntries'],
   properties: {
     intent: {
       type: 'string',
@@ -89,6 +89,20 @@ const ANRI_PLAN_SCHEMA = {
             },
           },
         },
+      },
+    },
+    trainingDirective: {
+      type: 'object',
+      required: ['action', 'presetName', 'reason'],
+      properties: {
+        action: {
+          type: 'string',
+          enum: ['none', 'confirm_swap', 'save_preset', 'save_preset_and_confirm_swap', 'activate_preset'],
+        },
+        presetName: {
+          type: ['string', 'null'],
+        },
+        reason: { type: 'string' },
       },
     },
     wikiEntries: {
@@ -158,6 +172,13 @@ Regras:
 - se criar treino, use 3 a 5 drills no maximo
 - cada drill deve ter objetivo e pontos-chave acionaveis
 - se o usuario trouxer dor, cansaco ou sinal de excesso, reduza carga e priorize controle
+- trainingDirective define o que a app deve fazer com treino e presets
+- use trainingDirective.action = confirm_swap quando estiver sugerindo um treino novo para o atleta confirmar antes de trocar
+- use save_preset quando o atleta pedir para guardar o treino sem trocar imediatamente
+- use save_preset_and_confirm_swap quando ele pedir para salvar e tambem deixar pronto para ativacao
+- use activate_preset apenas quando ele pedir para ativar um preset existente que esteja no contexto
+- se action = activate_preset, prefira trainingPlan = null; presetName deve bater com um preset existente
+- se nao houver nenhuma acao operacional sobre treino, use action = none
 - responseBrief deve resumir em 1 ou 2 frases o que a resposta final precisa comunicar ao atleta
 - priorities deve trazer 2 a 4 focos acionaveis
 - responda sempre no JSON pedido
@@ -305,13 +326,66 @@ async function persistAuthoritativeState(
       source: 'default',
       updatedAt: new Date().toISOString(),
     };
-  const nextTrainingPlan = responsePayload.trainingPlan
+  const materializedSuggestedPlan = responsePayload.trainingPlan
     ? {
         ...materializeTrainingPlan(responsePayload.trainingPlan, baseTrainingPlan.drills),
-        source: 'anri',
+        source: 'anri' as const,
         updatedAt: new Date().toISOString(),
       }
-    : baseTrainingPlan;
+    : null;
+  const basePendingTrainingPlan = existingContent?.pendingTrainingPlan ?? null;
+  const baseTrainingPresets = Array.isArray(existingContent?.trainingPresets) ? existingContent.trainingPresets : [];
+  const normalizedPresetName = responsePayload.trainingDirective.presetName?.trim().toLocaleLowerCase('pt-BR') ?? null;
+  const matchedPreset = normalizedPresetName
+    ? baseTrainingPresets.find(
+        (preset: { name: string }) => preset.name.trim().toLocaleLowerCase('pt-BR') === normalizedPresetName
+      ) ?? null
+    : null;
+
+  let nextTrainingPlan = baseTrainingPlan;
+  let nextPendingTrainingPlan = basePendingTrainingPlan;
+  let nextTrainingPresets = [...baseTrainingPresets];
+
+  if (
+    materializedSuggestedPlan &&
+    ['confirm_swap', 'save_preset_and_confirm_swap', 'none'].includes(responsePayload.trainingDirective.action)
+  ) {
+    nextPendingTrainingPlan = {
+      ...materializedSuggestedPlan,
+      suggestedAt: new Date().toISOString(),
+      suggestedBy: body.channel === 'daily_automation' ? 'daily_routine' : 'anri',
+      suggestedPresetName: responsePayload.trainingDirective.presetName,
+    };
+  }
+
+  if (materializedSuggestedPlan && ['save_preset', 'save_preset_and_confirm_swap'].includes(responsePayload.trainingDirective.action)) {
+    const presetName = responsePayload.trainingDirective.presetName?.trim() || materializedSuggestedPlan.title;
+    const nextPreset = {
+      id: `preset-${presetName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      name: presetName,
+      savedAt: new Date().toISOString(),
+      source: 'anri',
+      plan: materializedSuggestedPlan,
+    };
+    const presetIndex = nextTrainingPresets.findIndex(
+      (preset: { name: string }) => preset.name.trim().toLocaleLowerCase('pt-BR') === presetName.trim().toLocaleLowerCase('pt-BR')
+    );
+
+    if (presetIndex >= 0) {
+      nextTrainingPresets[presetIndex] = nextPreset;
+    } else {
+      nextTrainingPresets.unshift(nextPreset);
+    }
+  }
+
+  if (responsePayload.trainingDirective.action === 'activate_preset' && matchedPreset?.plan) {
+    nextTrainingPlan = {
+      ...matchedPreset.plan,
+      source: 'anri',
+      updatedAt: new Date().toISOString(),
+    };
+    nextPendingTrainingPlan = null;
+  }
 
   const athleteXp = existingEgo?.xp ?? body.athlete.xp;
   const baseSkills = existingEgo?.skills?.length
@@ -331,13 +405,17 @@ async function persistAuthoritativeState(
     text: responsePayload.reply,
     response: responsePayload,
   };
-  const nextChatMessages = mergeChatMessages(baseChatMessages, body.chatMessages ?? [], [nextAiMessage]);
+  const nextChatMessages = body.channel === 'daily_automation'
+    ? baseChatMessages
+    : mergeChatMessages(baseChatMessages, body.chatMessages ?? [], [nextAiMessage]);
 
   await Promise.all([
     contentRef.set(
       {
         wikiEntries: nextWikiEntries,
         trainingPlan: nextTrainingPlan,
+        pendingTrainingPlan: nextPendingTrainingPlan,
+        trainingPresets: nextTrainingPresets,
       },
       { merge: true }
     ),
@@ -380,7 +458,7 @@ function mergeChatMessages(...sources: AnriChatMessage[][]) {
 }
 
 function toConversationMessages(messages: Array<Pick<AnriChatMessage, 'sender' | 'text'>>) {
-  return messages.slice(-20).map((message) => ({
+  return messages.slice(-20).map<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>((message) => ({
     role: message.sender === 'ai' ? 'model' : 'user',
     parts: [{ text: message.text }],
   }));
@@ -444,7 +522,19 @@ function buildVoiceFallback(plan: AnriExecutionPlan): AnriVoiceLayer {
   const segments = [plan.responseBrief];
 
   if (plan.trainingPlan) {
-    segments.push(`Montei um ajuste com foco em ${plan.trainingPlan.focus.toLowerCase()}.`);
+    if (plan.trainingDirective.action === 'confirm_swap') {
+      segments.push(`Montei um ajuste com foco em ${plan.trainingPlan.focus.toLowerCase()} e deixei a troca esperando sua confirmação.`);
+    } else {
+      segments.push(`Montei um ajuste com foco em ${plan.trainingPlan.focus.toLowerCase()}.`);
+    }
+  }
+
+  if (plan.trainingDirective.action === 'save_preset' || plan.trainingDirective.action === 'save_preset_and_confirm_swap') {
+    segments.push(`Também deixei esse protocolo preparado para virar preset${plan.trainingDirective.presetName ? ` como "${plan.trainingDirective.presetName}"` : ''}.`);
+  }
+
+  if (plan.trainingDirective.action === 'activate_preset' && plan.trainingDirective.presetName) {
+    segments.push(`Usei o preset "${plan.trainingDirective.presetName}" como referência para sua rotina atual.`);
   }
 
   if (plan.wikiEntries.length > 0) {
@@ -598,6 +688,9 @@ export async function POST(request: Request) {
   const currentTraining = authoritativeState?.content?.trainingPlan?.drills?.length
     ? authoritativeState.content.trainingPlan.drills
     : (body.currentTraining?.length ? body.currentTraining : DEFAULT_TRAINING_DRILLS);
+  const currentTrainingPresets = Array.isArray(authoritativeState?.content?.trainingPresets)
+    ? authoritativeState.content.trainingPresets
+    : (body.trainingPresets ?? []);
   const currentSkillTree = authoritativeState?.ego?.skills?.length
     ? authoritativeState.ego.skills
     : (body.skillTree?.length ? body.skillTree : body.athlete.unlockedSkills);
@@ -631,6 +724,15 @@ export async function POST(request: Request) {
     'TREINO ATUAL DISPONIVEL',
     JSON.stringify(currentTraining),
     '',
+    'PRESETS DISPONIVEIS',
+    JSON.stringify(currentTrainingPresets),
+    '',
+    'AMBIENTE ATUAL',
+    JSON.stringify(body.environment ?? null),
+    '',
+    'PREFERENCIAS DO ATLETA',
+    JSON.stringify(body.preferences ?? null),
+    '',
     'INSTRUCAO DE NEGOCIO',
     [
       '1. Se o pedido for sobre treino, sugira um trainingPlan quando fizer sentido.',
@@ -642,10 +744,14 @@ export async function POST(request: Request) {
       '7. suggestedNextPrompts deve trazer 2 a 4 proximos prompts curtos e uteis.',
       '8. rationale deve explicar seu raciocinio de forma breve para a app, nao para o usuario final.',
       `9. Complexidade detectada no pedido: ${structuringSelection.reason}`,
+      '10. Quando sugerir treino novo no chat, use trainingDirective.action = confirm_swap por padrao.',
+      '11. Se o atleta pedir para salvar preset, use save_preset ou save_preset_and_confirm_swap.',
+      '12. Se o atleta pedir para ativar preset existente, use activate_preset e presetName com o nome mais proximo do contexto.',
+      `13. Canal da solicitacao atual: ${body.channel ?? 'chat'}`,
     ].join('\n'),
   ].join('\n');
 
-  const contents = [
+  const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [
     {
       role: 'user',
       parts: [{ text: contextBlock }],
@@ -712,6 +818,7 @@ export async function POST(request: Request) {
     reply: voiceLayer.reply,
     suggestedNextPrompts: voiceLayer.suggestedNextPrompts,
     trainingPlan: plan.trainingPlan,
+    trainingDirective: plan.trainingDirective,
     wikiEntries: plan.wikiEntries,
     skillTreeEntries: plan.skillTreeEntries,
   };

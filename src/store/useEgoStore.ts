@@ -9,8 +9,9 @@ import {
   type Skill,
   type SkillAlert,
 } from '@lib/ego-domain';
+import { calculateAthletePerformanceMetrics, type TrainingLevel } from '@lib/athlete-metrics';
 
-export type Rank = 'Z' | 'Y' | 'X' | 'W' | 'V' | 'U' | 'A' | 'S';
+export type Rank = TrainingLevel;
 export type { SkillType } from '@lib/bluelock-taxonomy';
 export type { Skill, SkillAlert } from '@lib/ego-domain';
 export { createSkillId, getSkillAlerts } from '@lib/ego-domain';
@@ -50,16 +51,13 @@ const TYPE_ORDER: Record<SkillType, number> = {
   resistencia: 5,
 };
 
-const calculateRank = (xp: number): Rank => {
-  if (xp < 1000) return 'Z';
-  if (xp < 2500) return 'Y';
-  if (xp < 5000) return 'X';
-  if (xp < 8000) return 'W';
-  if (xp < 12000) return 'V';
-  if (xp < 18000) return 'U';
-  if (xp < 30000) return 'A';
-  return 'S';
-};
+function calculateRank(xp: number, skills: Skill[], history: TrainingSession[]): Rank {
+  return calculateAthletePerformanceMetrics({
+    xp,
+    skills,
+    history,
+  }).level;
+}
 
 export const useEgoStore = create<EgoState>()(
   persist(
@@ -88,22 +86,24 @@ export const useEgoStore = create<EgoState>()(
 
       hydrateFromCloud: (payload, uid) => {
         const hydratedXp = payload.xp ?? 0;
+        const hydratedHistory = payload.history ?? [];
+        const hydratedSkills = cloneSkills(payload.skills ?? DEFAULT_SKILLS).map((skill) => ({
+          ...skill,
+          unlocked: skill.unlocked || hydratedXp >= skill.requiredXp,
+        }));
         set({
           ownerUid: uid,
           xp: hydratedXp,
-          rank: payload.rank ?? calculateRank(hydratedXp),
-          skills: cloneSkills(payload.skills ?? DEFAULT_SKILLS).map((skill) => ({
-            ...skill,
-            unlocked: skill.unlocked || hydratedXp >= skill.requiredXp,
-          })),
-          history: payload.history ?? [],
+          rank: calculateRank(hydratedXp, hydratedSkills, hydratedHistory),
+          skills: hydratedSkills,
+          history: hydratedHistory,
         });
       },
 
       addXp: (amount) => {
         set((state) => {
           const newXp = state.xp + amount;
-          const newRank = calculateRank(newXp);
+          const newRank = calculateRank(newXp, state.skills, state.history);
           return { xp: newXp, rank: newRank };
         });
         get().checkUnlocks();
@@ -116,11 +116,17 @@ export const useEgoStore = create<EgoState>()(
           date: new Date().toISOString(),
         };
         
-        set((state) => ({
-          history: [newSession, ...state.history],
-        }));
-        
-        get().addXp(session.xpEarned);
+        set((state) => {
+          const history = [newSession, ...state.history];
+          const xp = state.xp + session.xpEarned;
+          return {
+            history,
+            xp,
+            rank: calculateRank(xp, state.skills, history),
+          };
+        });
+
+        get().checkUnlocks();
       },
 
       checkUnlocks: () => {
@@ -133,7 +139,10 @@ export const useEgoStore = create<EgoState>()(
               unlocked: isUnlockedNow,
             };
           });
-          return { skills: updatedSkills };
+          return {
+            skills: updatedSkills,
+            rank: calculateRank(state.xp, updatedSkills, state.history),
+          };
         });
       },
 
@@ -177,7 +186,10 @@ export const useEgoStore = create<EgoState>()(
             return left.name.localeCompare(right.name, 'pt-BR');
           });
 
-          return { skills: mergedSkills };
+          return {
+            skills: mergedSkills,
+            rank: calculateRank(state.xp, mergedSkills, state.history),
+          };
         });
       },
 

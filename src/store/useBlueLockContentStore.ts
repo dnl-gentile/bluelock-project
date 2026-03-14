@@ -18,14 +18,48 @@ export interface ActiveTrainingPlan {
   updatedAt: string;
 }
 
+export interface PendingTrainingPlan extends ActiveTrainingPlan {
+  suggestedAt: string;
+  suggestedBy: 'anri' | 'daily_routine';
+  suggestedPresetName?: string | null;
+}
+
+export interface TrainingPreset {
+  id: string;
+  name: string;
+  savedAt: string;
+  source: 'manual' | 'anri';
+  plan: ActiveTrainingPlan;
+}
+
 interface BlueLockContentState {
   ownerUid: string | null;
   wikiEntries: Record<WikiCategoryId, WikiEntry[]>;
   trainingPlan: ActiveTrainingPlan;
+  pendingTrainingPlan: PendingTrainingPlan | null;
+  trainingPresets: TrainingPreset[];
   bindOwner: (uid: string | null) => void;
-  hydrateFromCloud: (payload: { wikiEntries?: Record<WikiCategoryId, WikiEntry[]>; trainingPlan?: ActiveTrainingPlan }, uid: string) => void;
+  hydrateFromCloud: (
+    payload: {
+      wikiEntries?: Record<WikiCategoryId, WikiEntry[]>;
+      trainingPlan?: ActiveTrainingPlan;
+      pendingTrainingPlan?: PendingTrainingPlan | null;
+      trainingPresets?: TrainingPreset[];
+    },
+    uid: string
+  ) => void;
   addWikiEntries: (entries: Array<Omit<WikiEntry, 'id'> & { id?: string }>) => void;
   setTrainingPlan: (plan: Omit<ActiveTrainingPlan, 'source' | 'updatedAt'>, source?: ActiveTrainingPlan['source']) => void;
+  suggestTrainingPlan: (
+    plan: Omit<ActiveTrainingPlan, 'source' | 'updatedAt'>,
+    options?: { suggestedBy?: PendingTrainingPlan['suggestedBy']; presetName?: string | null; source?: ActiveTrainingPlan['source'] }
+  ) => void;
+  activatePendingTrainingPlan: () => void;
+  dismissPendingTrainingPlan: () => void;
+  saveTrainingPreset: (name: string, plan?: ActiveTrainingPlan, source?: TrainingPreset['source']) => void;
+  savePendingTrainingAsPreset: (name?: string) => void;
+  activateTrainingPreset: (presetId: string) => void;
+  removeTrainingPreset: (presetId: string) => void;
   resetContent: () => void;
 }
 
@@ -38,6 +72,40 @@ const DEFAULT_TRAINING_PLAN: ActiveTrainingPlan = {
   source: 'default',
   updatedAt: new Date().toISOString(),
 };
+
+function cloneTrainingDrill(drill: TrainingDrill): TrainingDrill {
+  return {
+    ...drill,
+    topics: [...drill.topics],
+  };
+}
+
+function cloneTrainingPlan(plan: ActiveTrainingPlan): ActiveTrainingPlan {
+  return {
+    ...plan,
+    drills: plan.drills.map(cloneTrainingDrill),
+  };
+}
+
+function createDefaultTrainingPlan() {
+  return cloneTrainingPlan(DEFAULT_TRAINING_PLAN);
+}
+
+function createTrainingPresetId(name: string) {
+  return `preset-${slugify(name)}-${Date.now()}`;
+}
+
+function toActiveTrainingPlan(
+  plan: Omit<ActiveTrainingPlan, 'source' | 'updatedAt'>,
+  source: ActiveTrainingPlan['source']
+): ActiveTrainingPlan {
+  return {
+    ...plan,
+    drills: plan.drills.map(cloneTrainingDrill),
+    source,
+    updatedAt: new Date().toISOString(),
+  };
+}
 
 function slugify(value: string) {
   return value
@@ -57,7 +125,9 @@ export const useBlueLockContentStore = create<BlueLockContentState>()(
     (set) => ({
       ownerUid: null,
       wikiEntries: DEFAULT_WIKI_ENTRIES,
-      trainingPlan: DEFAULT_TRAINING_PLAN,
+      trainingPlan: createDefaultTrainingPlan(),
+      pendingTrainingPlan: null,
+      trainingPresets: [],
 
       bindOwner: (uid) => {
         set((state) => {
@@ -68,7 +138,9 @@ export const useBlueLockContentStore = create<BlueLockContentState>()(
           return {
             ownerUid: uid,
             wikiEntries: DEFAULT_WIKI_ENTRIES,
-            trainingPlan: DEFAULT_TRAINING_PLAN,
+            trainingPlan: createDefaultTrainingPlan(),
+            pendingTrainingPlan: null,
+            trainingPresets: [],
           };
         });
       },
@@ -77,7 +149,17 @@ export const useBlueLockContentStore = create<BlueLockContentState>()(
         set({
           ownerUid: uid,
           wikiEntries: payload.wikiEntries ?? DEFAULT_WIKI_ENTRIES,
-          trainingPlan: payload.trainingPlan ?? DEFAULT_TRAINING_PLAN,
+          trainingPlan: payload.trainingPlan ? cloneTrainingPlan(payload.trainingPlan) : createDefaultTrainingPlan(),
+          pendingTrainingPlan: payload.pendingTrainingPlan
+            ? {
+                ...payload.pendingTrainingPlan,
+                drills: payload.pendingTrainingPlan.drills.map(cloneTrainingDrill),
+              }
+            : null,
+          trainingPresets: payload.trainingPresets?.map((preset) => ({
+            ...preset,
+            plan: cloneTrainingPlan(preset.plan),
+          })) ?? [],
         });
       },
 
@@ -117,19 +199,153 @@ export const useBlueLockContentStore = create<BlueLockContentState>()(
 
       setTrainingPlan: (plan, source = 'anri') => {
         set({
-          trainingPlan: {
-            ...plan,
-            source,
-            updatedAt: new Date().toISOString(),
+          trainingPlan: toActiveTrainingPlan(plan, source),
+          pendingTrainingPlan: null,
+        });
+      },
+
+      suggestTrainingPlan: (plan, options) => {
+        set({
+          pendingTrainingPlan: {
+            ...toActiveTrainingPlan(plan, options?.source ?? 'anri'),
+            suggestedAt: new Date().toISOString(),
+            suggestedBy: options?.suggestedBy ?? 'anri',
+            suggestedPresetName: options?.presetName ?? null,
           },
         });
+      },
+
+      activatePendingTrainingPlan: () => {
+        set((state) => {
+          if (!state.pendingTrainingPlan) {
+            return state;
+          }
+
+          return {
+            trainingPlan: {
+              title: state.pendingTrainingPlan.title,
+              focus: state.pendingTrainingPlan.focus,
+              rationale: state.pendingTrainingPlan.rationale,
+              appliesToToday: state.pendingTrainingPlan.appliesToToday,
+              drills: state.pendingTrainingPlan.drills.map(cloneTrainingDrill),
+              source: state.pendingTrainingPlan.source,
+              updatedAt: new Date().toISOString(),
+            },
+            pendingTrainingPlan: null,
+          };
+        });
+      },
+
+      dismissPendingTrainingPlan: () => {
+        set({ pendingTrainingPlan: null });
+      },
+
+      saveTrainingPreset: (name, plan, source = 'manual') => {
+        set((state) => {
+          const planToSave = plan ? cloneTrainingPlan(plan) : cloneTrainingPlan(state.trainingPlan);
+          const normalizedName = name.trim() || planToSave.title;
+          const nextPreset: TrainingPreset = {
+            id: createTrainingPresetId(normalizedName),
+            name: normalizedName,
+            savedAt: new Date().toISOString(),
+            source,
+            plan: planToSave,
+          };
+
+          const existingIndex = state.trainingPresets.findIndex(
+            (candidate) => candidate.name.trim().toLocaleLowerCase('pt-BR') === normalizedName.trim().toLocaleLowerCase('pt-BR')
+          );
+          const nextPresets = [...state.trainingPresets];
+
+          if (existingIndex >= 0) {
+            nextPresets[existingIndex] = {
+              ...nextPresets[existingIndex],
+              ...nextPreset,
+            };
+          } else {
+            nextPresets.unshift(nextPreset);
+          }
+
+          return {
+            trainingPresets: nextPresets.slice(0, 12),
+          };
+        });
+      },
+
+      savePendingTrainingAsPreset: (name) => {
+        set((state) => {
+          if (!state.pendingTrainingPlan) {
+            return state;
+          }
+
+          const presetName = name?.trim() || state.pendingTrainingPlan.suggestedPresetName || state.pendingTrainingPlan.title;
+          const nextPreset: TrainingPreset = {
+            id: createTrainingPresetId(presetName),
+            name: presetName,
+            savedAt: new Date().toISOString(),
+            source: 'anri',
+            plan: {
+              title: state.pendingTrainingPlan.title,
+              focus: state.pendingTrainingPlan.focus,
+              rationale: state.pendingTrainingPlan.rationale,
+              appliesToToday: state.pendingTrainingPlan.appliesToToday,
+              drills: state.pendingTrainingPlan.drills.map(cloneTrainingDrill),
+              source: state.pendingTrainingPlan.source,
+              updatedAt: new Date().toISOString(),
+            },
+          };
+
+          const existingIndex = state.trainingPresets.findIndex(
+            (candidate) => candidate.name.trim().toLocaleLowerCase('pt-BR') === presetName.trim().toLocaleLowerCase('pt-BR')
+          );
+          const nextPresets = [...state.trainingPresets];
+
+          if (existingIndex >= 0) {
+            nextPresets[existingIndex] = {
+              ...nextPresets[existingIndex],
+              ...nextPreset,
+            };
+          } else {
+            nextPresets.unshift(nextPreset);
+          }
+
+          return {
+            trainingPresets: nextPresets.slice(0, 12),
+          };
+        });
+      },
+
+      activateTrainingPreset: (presetId) => {
+        set((state) => {
+          const preset = state.trainingPresets.find((candidate) => candidate.id === presetId);
+          if (!preset) {
+            return state;
+          }
+
+          return {
+            trainingPlan: {
+              ...cloneTrainingPlan(preset.plan),
+              source: 'anri',
+              updatedAt: new Date().toISOString(),
+            },
+            pendingTrainingPlan: null,
+          };
+        });
+      },
+
+      removeTrainingPreset: (presetId) => {
+        set((state) => ({
+          trainingPresets: state.trainingPresets.filter((preset) => preset.id !== presetId),
+        }));
       },
 
       resetContent: () => {
         set({
           ownerUid: null,
           wikiEntries: DEFAULT_WIKI_ENTRIES,
-          trainingPlan: DEFAULT_TRAINING_PLAN,
+          trainingPlan: createDefaultTrainingPlan(),
+          pendingTrainingPlan: null,
+          trainingPresets: [],
         });
       },
     }),

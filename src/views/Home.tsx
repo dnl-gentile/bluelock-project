@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
-import { CloudRain, Sun, Zap, Flame, Calendar, ChevronRight, UserSquare, ArrowRightLeft, History, Dumbbell } from 'lucide-react';
+import { useState } from 'react';
+import { CloudRain, Sun, Zap, Flame, Calendar, ChevronRight, UserSquare, ArrowRightLeft, History, Dumbbell, Bell, MapPin, Info, X } from 'lucide-react';
 import Link from 'next/link';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
-import { differenceInDays, isYesterday, isToday } from 'date-fns';
 import { useAuth } from '../lib/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEgoStore } from '../store/useEgoStore';
 import MapPage from './MapPage';
+import { useAthleteProfileStore } from '@store/useAthleteProfileStore';
+import { getAthleteStage, getBernardoAge } from '@lib/athlete-daily';
+import { calculateAthletePerformanceMetrics } from '@lib/athlete-metrics';
+import TrainingRankBadge from '@components/TrainingRankBadge';
 
 const QUOTES = [
   "O talento é algo que você faz florescer, o instinto é algo que você poli. - Blue Lock",
@@ -16,114 +19,48 @@ const QUOTES = [
   "A verdadeira química ocorre quando dois Egos se chocam e se devoram."
 ];
 
-interface WeatherData {
-  temp: number;
-  condition: 'Rain' | 'Clear' | 'Clouds' | unknown;
-  description: string;
-}
-
 export default function Home() {
   const { profile } = useAuth();
-  const { history, xp, rank } = useEgoStore();
-  
-  const [quote, setQuote] = useState('');
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [streak, setStreak] = useState(0);
+  const { history, xp, rank, skills } = useEgoStore();
+  const weather = useAthleteProfileStore((state) => state.weather);
+  const dailyBriefing = useAthleteProfileStore((state) => state.dailyBriefing);
+  const notifications = useAthleteProfileStore((state) => state.notifications);
+  const markNotificationRead = useAthleteProfileStore((state) => state.markNotificationRead);
+  const [notificationPermission, setNotificationPermission] = useState(() =>
+    typeof Notification === 'undefined' ? 'unsupported' : Notification.permission
+  );
   const [viewMode, setViewMode] = useState<'streak' | 'calendar'>('streak');
-
-  const calculateRadarData = () => {
-    const base = Math.min(100, (xp / 10000) * 100);
-    return [
-      { subject: 'Vel', A: Math.min(100, base + 20), fullMark: 100 },
-      { subject: 'Res', A: Math.min(100, base + 10), fullMark: 100 },
-      { subject: 'Chute', A: Math.min(100, base + 40), fullMark: 100 },
-      { subject: 'Drible', A: Math.min(100, base + 30), fullMark: 100 },
-      { subject: 'Passe', A: Math.min(100, base + 5), fullMark: 100 },
-      { subject: 'Mente', A: Math.min(100, base + 15), fullMark: 100 },
-    ];
-  };
-
-  const radarData = calculateRadarData();
-
-  useEffect(() => {
-    // Random Quote
-    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
-
-    // Calculate Streak
-    if (history.length > 0) {
-      const dates = history.map((h: any) => new Date(h.date)).sort((a: any, b: any) => b.getTime() - a.getTime());
-      
-      let currentStreak = 0;
-      let lastDate = new Date(); // Start checking from today
-      
-      // If the latest training was neither today nor yesterday, streak is broken.
-      if (!isToday(dates[0]) && !isYesterday(dates[0])) {
-        currentStreak = 0;
-      } else {
-        // Calculate consecutive days backwards
-        for (let i = 0; i < dates.length; i++) {
-          const diff = differenceInDays(lastDate, dates[i]);
-          if (diff === 0 && i > 0) continue; // Same day multiple trainings, ignore
-          if (diff <= 1) {
-            currentStreak++;
-            lastDate = dates[i];
-          } else {
-            break;
-          }
-        }
-      }
-      setStreak(currentStreak);
-    }
-
-    // Fetch Weather (Fake API call to openweathermap for demonstration, assuming user will add key)
-    const fetchWeather = async () => {
-      try {
-        const apiKey = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
-        if (!apiKey) {
-          // Mock data if no key is provided
-          setWeather({ temp: 28, condition: 'Clear', description: 'Céu aberto, ideal para outdoor' });
-          return;
-        }
-
-        // Real fetching for Aracaju
-        const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=Aracaju,BR&units=metric&appid=${apiKey}`);
-        const data = await res.json();
-        setWeather({
-          temp: Math.round(data.main.temp),
-          condition: data.weather[0].main,
-          description: data.weather[0].description
-        });
-      } catch (err) {
-        setWeather({ temp: 30, condition: 'Clear', description: 'Clima não detectado' });
-      }
-    };
-
-    fetchWeather();
-  }, [history]);
+  const [isStreakInfoOpen, setIsStreakInfoOpen] = useState(false);
+  const performance = calculateAthletePerformanceMetrics({ xp, history, skills });
+  const streak = performance.streak.current;
+  const age = getBernardoAge();
+  const stage = getAthleteStage(age);
+  const quote = QUOTES[new Date().getDate() % QUOTES.length];
+  const latestNotifications = notifications.slice(0, 3);
+  const radarData = performance.radar.map((domain) => ({
+    subject: domain.label,
+    A: domain.score,
+    fullMark: 100,
+  }));
+  const currentWeek = performance.streak.currentWeek;
 
   const isIndoorProtocol = weather?.condition === 'Rain';
+  const requestNotificationPermission = async () => {
+    if (typeof Notification === 'undefined') return;
+    const nextPermission = await Notification.requestPermission();
+    setNotificationPermission(nextPermission);
+  };
 
   return (
     <div className="flex flex-col space-y-6 max-w-4xl mx-auto py-4">
       
       {/* User Hello & Weather Row */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0a0e17] p-5 rounded-3xl border border-white/5 box-shadow-neon">
-        <div className="flex items-center gap-4">
-          {profile?.photoURL && (
-            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-[#1d4ed8]/30 bg-[#151922] p-[2px]">
-              <img
-                src={profile.photoURL}
-                alt={profile.name}
-                className="h-full w-full rounded-[14px] object-cover object-center"
-              />
-            </div>
-          )}
-          <div>
-            <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
-              Eaí, {profile?.name || 'Egoísta'}.
-            </h1>
-            <p className="text-sm text-slate-400 font-mono">Preparado para devorar o campo hoje?</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
+            Eaí, {profile?.name || 'Egoísta'}.
+          </h1>
+          <p className="text-sm text-slate-400 font-mono">Preparado para devorar o campo hoje?</p>
         </div>
         
         {weather && (
@@ -134,8 +71,12 @@ export default function Home() {
               <Sun className="text-[#ff003c] animate-pulse-neon" />
             )}
             <div>
-              <p className="text-xs text-slate-500 font-mono tracking-widest uppercase">Clima Aracaju</p>
+              <p className="text-xs text-slate-500 font-mono tracking-widest uppercase flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                {weather.locationLabel || 'Clima local'}
+              </p>
               <p className="text-white font-bold">{weather.temp}°C - {isIndoorProtocol ? 'INDOOR REC.' : 'OUTDOOR'}</p>
+              <p className="text-[11px] text-slate-500">{weather.description}</p>
             </div>
           </div>
         )}
@@ -162,6 +103,15 @@ export default function Home() {
             
             <button className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full z-10">
                <ArrowRightLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                setIsStreakInfoOpen(true);
+              }}
+              className="absolute top-4 left-4 text-slate-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full z-10"
+            >
+              <Info className="w-4 h-4" />
             </button>
 
             <AnimatePresence mode="wait">
@@ -190,27 +140,37 @@ export default function Home() {
                   initial={{ opacity: 0, rotateY: 90 }} 
                   animate={{ opacity: 1, rotateY: 0 }} 
                   exit={{ opacity: 0, rotateY: -90 }} 
-                  transition={{ duration: 0.2 }}
-                  className="flex flex-col items-center w-full z-10 h-full"
+                   transition={{ duration: 0.2 }}
+                   className="flex flex-col items-center w-full z-10 h-full"
                 >
-                  <h3 className="text-sm text-slate-400 font-mono uppercase tracking-widest mb-3">Registro de Março</h3>
-                  <div className="grid grid-cols-7 gap-1.5 w-full mx-auto max-w-[200px]">
-                     {/* simple mock calendar grid */}
-                     {Array.from({length: 28}).map((_, i) => {
-                        // fake trained days
-                        const isTrainedDay = i === 11 || i === 12 || i === 13;
-                        const isFuture = i > 15;
-                        return (
-                          <div 
-                             key={i} 
-                             className={`w-full aspect-square rounded-sm border ${
-                               isFuture ? 'border-white/5 bg-transparent' 
-                               : (isTrainedDay ? 'bg-[#ff003c] border-[#ff003c]/50 shadow-[0_0_5px_#ff003c]' : 'bg-[#162032] border-white/10')
-                             }`}
-                          />
-                        )
-                     })}
+                  <h3 className="text-sm text-slate-400 font-mono uppercase tracking-widest mb-3">Semana Atual</h3>
+                  <div className="grid grid-cols-7 gap-2 w-full mx-auto max-w-[280px]">
+                     {currentWeek.days.map((day) => (
+                        <div key={day.dateKey} className="flex flex-col items-center gap-1">
+                          <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">{day.label}</span>
+                          <div
+                            className={`w-full aspect-square rounded-xl border flex items-center justify-center text-[10px] font-bold ${
+                              day.trained
+                                ? 'bg-[#ff003c] border-[#ff003c]/50 text-white shadow-[0_0_8px_rgba(255,0,60,0.35)]'
+                                : day.isWeekend && currentWeek.protectedWeekend
+                                ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-300'
+                                : 'bg-[#162032] border-white/10 text-slate-500'
+                            }`}
+                          >
+                            {day.trained ? 'OK' : day.isWeekend && currentWeek.protectedWeekend ? 'FREE' : '--'}
+                          </div>
+                        </div>
+                     ))}
                   </div>
+                  <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-400">
+                    {currentWeek.missedWeekdays === 0
+                      ? 'Semana perfeita. O fim de semana fica protegido.'
+                      : currentWeek.missedWeekdays === 1
+                      ? currentWeek.compensationFulfilled
+                        ? 'Um dia congelado e os dois dias do fim de semana pagos.'
+                        : 'Um dia congelado. Treinar sábado e domingo mantém a semana viva.'
+                      : `Penalidade ativa: -${currentWeek.penaltyDays} dias pelas faltas além da primeira.`}
+                  </p>
                   <p className="text-[10px] text-[#ff003c] font-mono mt-auto pt-4 uppercase opacity-50">Toque para voltar</p>
                 </motion.div>
               )}
@@ -219,10 +179,58 @@ export default function Home() {
         </div>
 
         {/* Radar Chart Panel */}
-        <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10 flex flex-col items-center justify-start h-[350px]">
+        <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10 flex flex-col items-center justify-start min-h-[420px]">
           <div className="flex items-center gap-2 mb-2 w-full">
             <UserSquare className="w-5 h-5 text-[#1d4ed8]" />
             <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Matriz Pessoal</h2>
+          </div>
+
+          <div className="w-full rounded-2xl border border-white/5 bg-black/20 p-4 mb-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4">
+                {profile?.photoURL && (
+                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#1d4ed8]/30 bg-[#151922] p-[2px]">
+                    <img
+                      src={profile.photoURL}
+                      alt={profile.name}
+                      className="h-full w-full rounded-[14px] object-cover object-center"
+                    />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <h3 className="text-lg font-black uppercase tracking-tight text-white">{profile?.name || 'Bernardo'}</h3>
+                  <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#1d4ed8]">
+                    {age} anos · {stage}
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                    {dailyBriefing?.subheadline || 'A Anri ainda está lendo o seu ritmo do dia.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex shrink-0 justify-center sm:justify-end">
+                <TrainingRankBadge
+                  position={performance.leaderboardPosition}
+                  level={performance.level}
+                  className="w-[150px]"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
+                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Dias treinados</p>
+                <p className="mt-1 text-lg font-black text-white">{performance.totalTrainingDays}</p>
+              </div>
+              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
+                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Armas abertas</p>
+                <p className="mt-1 text-lg font-black text-white">{performance.unlockedSkills}</p>
+              </div>
+              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
+                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Posição</p>
+                <p className="mt-1 text-lg font-black text-white">#{performance.leaderboardPosition}</p>
+              </div>
+            </div>
           </div>
           
           <div className="w-full flex-1 min-h-[200px] relative">
@@ -263,6 +271,46 @@ export default function Home() {
           </div>
         </div>
       </Link>
+
+      <div className="w-full bg-[#0a0e17] rounded-3xl border border-white/5 box-shadow-neon p-6">
+        <div className="flex items-center justify-between gap-3 mb-4 pb-2 border-b border-white/5">
+          <div className="flex items-center gap-2">
+            <Bell className="w-5 h-5 text-[#1d4ed8]" />
+            <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Alertas Blue Lock</h2>
+          </div>
+          {notificationPermission !== 'granted' && notificationPermission !== 'unsupported' && (
+            <button
+              onClick={() => void requestNotificationPermission()}
+              className="rounded-full border border-[#1d4ed8]/30 bg-[#1d4ed8]/10 px-3 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-[#60a5fa]"
+            >
+              Ativar
+            </button>
+          )}
+        </div>
+
+        {latestNotifications.length > 0 ? (
+          <div className="space-y-3">
+            {latestNotifications.map((notification) => (
+              <button
+                key={notification.id}
+                onClick={() => markNotificationRead(notification.id)}
+                className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
+                  notification.readAt
+                    ? 'border-white/5 bg-black/20'
+                    : 'border-[#1d4ed8]/20 bg-[#162032]/70'
+                }`}
+              >
+                <p className="text-xs font-mono uppercase tracking-[0.22em] text-[#1d4ed8]">{notification.title}</p>
+                <p className="mt-2 text-sm text-slate-300">{notification.body}</p>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-white/5 bg-black/20 px-4 py-5 text-sm text-slate-500">
+            A Anri ainda está montando seus alertas do dia.
+          </div>
+        )}
+      </div>
 
       <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-4" />
       
@@ -307,6 +355,49 @@ export default function Home() {
       <div className="w-full p-0 m-0">
         <MapPage />
       </div>
+
+      {isStreakInfoOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0a0e17] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#60a5fa]">Como a ofensiva conta</p>
+                <h3 className="mt-2 text-2xl font-black uppercase tracking-tight text-white">Regra do streak</h3>
+              </div>
+              <button
+                onClick={() => setIsStreakInfoOpen(false)}
+                className="rounded-full border border-white/10 bg-white/5 p-2 text-slate-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-3 text-sm leading-relaxed text-slate-300">
+              <p>1. Se Bernardo fecha os 5 dias úteis, sábado e domingo ficam livres e a semana vale 7 dias cheios.</p>
+              <p>2. Se ele perde 1 dia útil, esse dia congela. Treinar nos 2 dias do fim de semana mantém a semana viva e rende 6 dias.</p>
+              <p>3. Se ele perde 2 dias úteis ou mais, cada falta a partir da segunda tira 2 dias do streak até o total zerar.</p>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-white/5 bg-white/[0.03] p-4">
+              <p className="text-[10px] font-mono uppercase tracking-[0.22em] text-slate-500">Resumo da semana atual</p>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Dias úteis</p>
+                  <p className="text-lg font-black text-white">{currentWeek.trainedWeekdays}/5</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Fim de semana</p>
+                  <p className="text-lg font-black text-white">{currentWeek.trainedWeekendDays}/2</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Delta</p>
+                  <p className="text-lg font-black text-white">{currentWeek.delta >= 0 ? `+${currentWeek.delta}` : currentWeek.delta}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

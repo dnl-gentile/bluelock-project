@@ -7,6 +7,7 @@ import { db } from '@lib/firebase';
 import { useBlueLockContentStore } from '@store/useBlueLockContentStore';
 import { useAnriChatStore } from '@store/useAnriChatStore';
 import { useEgoStore } from '@store/useEgoStore';
+import { useAthleteProfileStore } from '@store/useAthleteProfileStore';
 
 function serializeEgoState(payload: {
   xp: number;
@@ -20,12 +21,25 @@ function serializeEgoState(payload: {
 function serializeContentState(payload: {
   wikiEntries: unknown;
   trainingPlan: unknown;
+  pendingTrainingPlan: unknown;
+  trainingPresets: unknown;
 }) {
   return JSON.stringify(payload);
 }
 
 function serializeChatState(payload: {
   messages: unknown;
+}) {
+  return JSON.stringify(payload);
+}
+
+function serializeAthleteState(payload: {
+  preferences: unknown;
+  location: unknown;
+  weather: unknown;
+  dailyBriefing: unknown;
+  notifications: unknown;
+  lastDailyRoutineDate: unknown;
 }) {
   return JSON.stringify(payload);
 }
@@ -44,6 +58,8 @@ export default function FirestoreStateSync() {
   const contentOwnerUid = useBlueLockContentStore((state) => state.ownerUid);
   const wikiEntries = useBlueLockContentStore((state) => state.wikiEntries);
   const trainingPlan = useBlueLockContentStore((state) => state.trainingPlan);
+  const pendingTrainingPlan = useBlueLockContentStore((state) => state.pendingTrainingPlan);
+  const trainingPresets = useBlueLockContentStore((state) => state.trainingPresets);
   const bindContentOwner = useBlueLockContentStore((state) => state.bindOwner);
   const hydrateContentFromCloud = useBlueLockContentStore((state) => state.hydrateFromCloud);
 
@@ -52,16 +68,29 @@ export default function FirestoreStateSync() {
   const bindChatOwner = useAnriChatStore((state) => state.bindOwner);
   const hydrateChatFromCloud = useAnriChatStore((state) => state.hydrateFromCloud);
 
+  const athleteOwnerUid = useAthleteProfileStore((state) => state.ownerUid);
+  const athletePreferences = useAthleteProfileStore((state) => state.preferences);
+  const athleteLocation = useAthleteProfileStore((state) => state.location);
+  const athleteWeather = useAthleteProfileStore((state) => state.weather);
+  const athleteDailyBriefing = useAthleteProfileStore((state) => state.dailyBriefing);
+  const athleteNotifications = useAthleteProfileStore((state) => state.notifications);
+  const lastDailyRoutineDate = useAthleteProfileStore((state) => state.lastDailyRoutineDate);
+  const bindAthleteOwner = useAthleteProfileStore((state) => state.bindOwner);
+  const hydrateAthleteFromCloud = useAthleteProfileStore((state) => state.hydrateFromCloud);
+
   const [egoRemoteReady, setEgoRemoteReady] = useState(false);
   const [contentRemoteReady, setContentRemoteReady] = useState(false);
   const [chatRemoteReady, setChatRemoteReady] = useState(false);
+  const [athleteRemoteReady, setAthleteRemoteReady] = useState(false);
 
   const skipNextEgoWriteRef = useRef(false);
   const skipNextContentWriteRef = useRef(false);
   const skipNextChatWriteRef = useRef(false);
+  const skipNextAthleteWriteRef = useRef(false);
   const lastEgoSerializedRef = useRef<string | null>(null);
   const lastContentSerializedRef = useRef<string | null>(null);
   const lastChatSerializedRef = useRef<string | null>(null);
+  const lastAthleteSerializedRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -70,22 +99,27 @@ export default function FirestoreStateSync() {
     setEgoRemoteReady(false);
     setContentRemoteReady(false);
     setChatRemoteReady(false);
+    setAthleteRemoteReady(false);
     lastEgoSerializedRef.current = null;
     lastContentSerializedRef.current = null;
     lastChatSerializedRef.current = null;
+    lastAthleteSerializedRef.current = null;
     skipNextEgoWriteRef.current = false;
     skipNextContentWriteRef.current = false;
     skipNextChatWriteRef.current = false;
+    skipNextAthleteWriteRef.current = false;
 
     bindEgoOwner(uid);
     bindContentOwner(uid);
     bindChatOwner(uid);
+    bindAthleteOwner(uid);
 
     if (!uid || !db) return;
 
     const egoDocRef = doc(db, 'users', uid, 'appState', 'ego');
     const contentDocRef = doc(db, 'users', uid, 'appState', 'content');
     const chatDocRef = doc(db, 'users', uid, 'appState', 'chat');
+    const athleteDocRef = doc(db, 'users', uid, 'appState', 'athlete');
 
     const unsubscribeEgo = onSnapshot(
       egoDocRef,
@@ -134,6 +168,8 @@ export default function FirestoreStateSync() {
         const serialized = serializeContentState({
           wikiEntries: data.wikiEntries ?? undefined,
           trainingPlan: data.trainingPlan ?? undefined,
+          pendingTrainingPlan: data.pendingTrainingPlan ?? null,
+          trainingPresets: data.trainingPresets ?? [],
         });
 
         lastContentSerializedRef.current = serialized;
@@ -142,6 +178,8 @@ export default function FirestoreStateSync() {
           {
             wikiEntries: data.wikiEntries,
             trainingPlan: data.trainingPlan,
+            pendingTrainingPlan: data.pendingTrainingPlan,
+            trainingPresets: data.trainingPresets,
           },
           uid
         );
@@ -182,10 +220,50 @@ export default function FirestoreStateSync() {
       }
     );
 
+    const unsubscribeAthlete = onSnapshot(
+      athleteDocRef,
+      (snapshot) => {
+        if (!snapshot.exists()) {
+          setAthleteRemoteReady(true);
+          return;
+        }
+
+        const data = snapshot.data();
+        const serialized = serializeAthleteState({
+          preferences: data.preferences ?? undefined,
+          location: data.location ?? null,
+          weather: data.weather ?? null,
+          dailyBriefing: data.dailyBriefing ?? null,
+          notifications: data.notifications ?? [],
+          lastDailyRoutineDate: data.lastDailyRoutineDate ?? null,
+        });
+
+        lastAthleteSerializedRef.current = serialized;
+        skipNextAthleteWriteRef.current = true;
+        hydrateAthleteFromCloud(
+          {
+            preferences: data.preferences,
+            location: data.location,
+            weather: data.weather,
+            dailyBriefing: data.dailyBriefing,
+            notifications: data.notifications,
+            lastDailyRoutineDate: data.lastDailyRoutineDate,
+          },
+          uid
+        );
+        setAthleteRemoteReady(true);
+      },
+      (error) => {
+        console.error('Erro ao sincronizar perfil do atleta no Firestore', error);
+        setAthleteRemoteReady(true);
+      }
+    );
+
     return () => {
       unsubscribeEgo();
       unsubscribeContent();
       unsubscribeChat();
+      unsubscribeAthlete();
     };
   }, [
     user?.uid,
@@ -193,9 +271,11 @@ export default function FirestoreStateSync() {
     bindEgoOwner,
     bindContentOwner,
     bindChatOwner,
+    bindAthleteOwner,
     hydrateEgoFromCloud,
     hydrateContentFromCloud,
     hydrateChatFromCloud,
+    hydrateAthleteFromCloud,
   ]);
 
   useEffect(() => {
@@ -231,6 +311,8 @@ export default function FirestoreStateSync() {
     const payload = {
       wikiEntries,
       trainingPlan,
+      pendingTrainingPlan,
+      trainingPresets,
     };
     const serialized = serializeContentState(payload);
 
@@ -248,7 +330,7 @@ export default function FirestoreStateSync() {
       console.error('Erro ao salvar conteúdo do Firestore', error);
       lastContentSerializedRef.current = null;
     });
-  }, [contentOwnerUid, contentRemoteReady, wikiEntries, trainingPlan]);
+  }, [contentOwnerUid, contentRemoteReady, wikiEntries, trainingPlan, pendingTrainingPlan, trainingPresets]);
 
   useEffect(() => {
     if (!db || !chatOwnerUid || !chatRemoteReady) return;
@@ -273,6 +355,44 @@ export default function FirestoreStateSync() {
       lastChatSerializedRef.current = null;
     });
   }, [chatOwnerUid, chatRemoteReady, chatMessages]);
+
+  useEffect(() => {
+    if (!db || !athleteOwnerUid || !athleteRemoteReady) return;
+
+    const payload = {
+      preferences: athletePreferences,
+      location: athleteLocation,
+      weather: athleteWeather,
+      dailyBriefing: athleteDailyBriefing,
+      notifications: athleteNotifications,
+      lastDailyRoutineDate,
+    };
+    const serialized = serializeAthleteState(payload);
+
+    if (skipNextAthleteWriteRef.current) {
+      skipNextAthleteWriteRef.current = false;
+      return;
+    }
+
+    if (serialized === lastAthleteSerializedRef.current) {
+      return;
+    }
+
+    lastAthleteSerializedRef.current = serialized;
+    void setDoc(doc(db, 'users', athleteOwnerUid, 'appState', 'athlete'), payload).catch((error) => {
+      console.error('Erro ao salvar perfil do atleta no Firestore', error);
+      lastAthleteSerializedRef.current = null;
+    });
+  }, [
+    athleteOwnerUid,
+    athleteRemoteReady,
+    athletePreferences,
+    athleteLocation,
+    athleteWeather,
+    athleteDailyBriefing,
+    athleteNotifications,
+    lastDailyRoutineDate,
+  ]);
 
   return null;
 }

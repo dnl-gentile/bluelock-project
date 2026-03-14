@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Compass, Swords, Trophy, BookOpen, MessageSquare, Shield } from 'lucide-react';
 import FirestoreStateSync from '@components/FirestoreStateSync';
+import AthleteAutomation from '@components/AthleteAutomation';
 
 function Navigation() {
   const pathname = usePathname();
@@ -14,7 +15,7 @@ function Navigation() {
 
   const links = profile.role === 'trainee'
     ? [
-        { href: '/', icon: <Compass className="w-5 h-5" />, label: 'Mapa' },
+        { href: '/', icon: <Compass className="w-5 h-5" />, label: 'Home' },
         { href: '/training', icon: <Swords className="w-5 h-5" />, label: 'Treino' },
         { href: '/skills', icon: <Trophy className="w-5 h-5" />, label: 'Ego' },
         { href: '/wiki', icon: <BookOpen className="w-5 h-5" />, label: 'Wiki' },
@@ -76,6 +77,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <AuthProvider>
       <FirestoreStateSync />
+      <AthleteAutomation />
       <LayoutContent>{children}</LayoutContent>
     </AuthProvider>
   );

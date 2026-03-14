@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   WIKI_CATEGORIES,
-  type WikiCategoryId,
 } from '@lib/bluelock-content';
+import type { WikiCategoryId } from '@lib/bluelock-taxonomy';
 import { useBlueLockContentStore } from '@store/useBlueLockContentStore';
 
 const CATEGORY_ICONS = {

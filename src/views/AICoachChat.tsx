@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertTriangle, ArrowLeft, Brain, BookOpen, Send, Sparkles, User } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { AlertTriangle, Brain, BookOpen, Send, Sparkles, User } from 'lucide-react';
 import { useEgoStore } from '../store/useEgoStore';
 import { flattenWikiEntries } from '@lib/bluelock-content';
 import type { AnriChatMessage, AnriMessage, AnriResponsePayload } from '@lib/anri/types';
@@ -8,9 +8,11 @@ import { materializeSkillTreeEntries, materializeTrainingPlan, materializeWikiEn
 import { useBlueLockContentStore } from '@store/useBlueLockContentStore';
 import { useAnriChatStore } from '@store/useAnriChatStore';
 import { useAuth } from '@lib/AuthContext';
+import { useAthleteProfileStore } from '@store/useAthleteProfileStore';
 
 const anriAvatarImageClass = 'h-full w-full rounded-full object-cover object-[center_18%] scale-[0.9] transform-gpu';
-const userAvatarImageClass = 'h-full w-full rounded-full object-cover object-center';
+const userAvatarImageClass = 'h-full w-full rounded-full object-cover object-center scale-[0.9] transform-gpu';
+const avatarFrameClass = 'w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden border border-[#1d4ed8]/50 bg-[#151922] p-[1.5px]';
 
 function createMessageId() {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -18,12 +20,22 @@ function createMessageId() {
 
 export default function AICoachChat() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const initialQuery = searchParams.get('q');
   const hasBootstrappedInitialQuery = useRef(false);
   const { user, profile } = useAuth();
   const { xp, rank, skills, history, upsertSkills } = useEgoStore();
-  const { wikiEntries, trainingPlan, addWikiEntries, setTrainingPlan } = useBlueLockContentStore();
+  const weather = useAthleteProfileStore((state) => state.weather);
+  const preferences = useAthleteProfileStore((state) => state.preferences);
+  const {
+    wikiEntries,
+    trainingPlan,
+    trainingPresets,
+    addWikiEntries,
+    setTrainingPlan,
+    suggestTrainingPlan,
+    saveTrainingPreset,
+    activateTrainingPreset,
+  } = useBlueLockContentStore();
   const messages = useAnriChatStore((state) => state.messages);
   const appendMessage = useAnriChatStore((state) => state.appendMessage);
   const [input, setInput] = useState('');
@@ -88,10 +100,27 @@ export default function AICoachChat() {
           messages: conversation,
           chatMessages,
           pendingAiMessageId,
+          channel: 'chat',
           athlete,
           wikiEntries: flattenWikiEntries(wikiEntries),
           currentTraining: trainingPlan.drills,
           currentTrainingPlan: trainingPlan,
+          environment: weather
+            ? {
+                weatherCondition: weather.condition,
+                weatherDescription: weather.description,
+                temperatureC: weather.temp,
+                locationLabel: weather.locationLabel,
+              }
+            : undefined,
+          preferences,
+          trainingPresets: trainingPresets.map((preset) => ({
+            id: preset.id,
+            name: preset.name,
+            focus: preset.plan.focus,
+            rationale: preset.plan.rationale,
+            savedAt: preset.savedAt,
+          })),
           skillTree: skills.map((skill) => ({
             id: skill.id,
             name: skill.name,
@@ -127,8 +156,46 @@ export default function AICoachChat() {
         addWikiEntries(materializeWikiEntries(payload.wikiEntries));
       }
 
+      if (payload.trainingDirective?.action === 'activate_preset' && payload.trainingDirective.presetName) {
+        const normalizedPresetName = payload.trainingDirective.presetName.trim().toLocaleLowerCase('pt-BR');
+        const matchingPreset = trainingPresets.find(
+          (preset) => preset.name.trim().toLocaleLowerCase('pt-BR') === normalizedPresetName
+        );
+
+        if (matchingPreset) {
+          activateTrainingPreset(matchingPreset.id);
+        }
+      }
+
       if (payload.trainingPlan) {
-        setTrainingPlan(materializeTrainingPlan(payload.trainingPlan, trainingPlan.drills));
+        const nextPlan = materializeTrainingPlan(payload.trainingPlan, trainingPlan.drills);
+
+        if (
+          payload.trainingDirective?.action === 'save_preset' ||
+          payload.trainingDirective?.action === 'save_preset_and_confirm_swap'
+        ) {
+          saveTrainingPreset(
+            payload.trainingDirective.presetName || payload.trainingPlan.title,
+            {
+              ...nextPlan,
+              source: 'anri',
+              updatedAt: new Date().toISOString(),
+            },
+            'anri'
+          );
+        }
+
+        if (
+          !payload.trainingDirective ||
+          payload.trainingDirective.action === 'confirm_swap' ||
+          payload.trainingDirective.action === 'save_preset_and_confirm_swap' ||
+          payload.trainingDirective.action === 'none'
+        ) {
+          suggestTrainingPlan(nextPlan, {
+            suggestedBy: 'anri',
+            presetName: payload.trainingDirective?.presetName ?? null,
+          });
+        }
       }
 
       if (payload.skillTreeEntries?.length) {
@@ -169,9 +236,6 @@ export default function AICoachChat() {
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)] max-w-3xl mx-auto">
       <div className="flex items-center gap-3 py-4 border-b border-white/5 shrink-0">
-        <button onClick={() => router.back()} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-slate-300" />
-        </button>
         <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-[#1d4ed8] bg-[#151922] p-[2px]">
           <img src="/anri.jpg" alt="Anri" className={anriAvatarImageClass} />
         </div>
@@ -187,13 +251,17 @@ export default function AICoachChat() {
       <div className="flex-1 overflow-y-auto py-6 space-y-6 scroll-smooth px-2 no-scrollbar">
         {messages.map((msg) => {
           const isAI = msg.sender === 'ai';
-          const trainingPlan = msg.response?.trainingPlan;
+          const responseTrainingPlan = msg.response?.trainingPlan;
+          const trainingDirective = msg.response?.trainingDirective;
           const wikiEntries = msg.response?.wikiEntries ?? [];
           const skillTreeEntries = msg.response?.skillTreeEntries ?? [];
+          const actionablePlan = responseTrainingPlan
+            ? materializeTrainingPlan(responseTrainingPlan, trainingPlan.drills)
+            : null;
 
           return (
             <div key={msg.id} className={`flex gap-3 ${isAI ? 'flex-row' : 'flex-row-reverse'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${isAI ? 'border border-[#1d4ed8]/50 bg-[#151922] p-[1.5px]' : 'bg-white/10'}`}>
+              <div className={isAI ? avatarFrameClass : avatarFrameClass}>
                 {isAI ? (
                   <img src="/anri.jpg" alt="Anri" className={anriAvatarImageClass} />
                 ) : profile?.photoURL ? (
@@ -212,16 +280,23 @@ export default function AICoachChat() {
                   {msg.text}
                 </div>
 
-                {trainingPlan && (
+                {responseTrainingPlan && (
                   <div className="mt-3 w-full rounded-2xl border border-[#1d4ed8]/30 bg-[#0a0e17] p-4 box-shadow-neon">
                     <div className="flex items-center gap-2 text-[#1d4ed8] mb-2">
                       <Sparkles className="w-4 h-4" />
                       <span className="text-[11px] font-mono uppercase tracking-[0.24em]">Plano Sugerido</span>
                     </div>
-                    <h3 className="text-white font-bold">{trainingPlan.title}</h3>
-                    <p className="text-xs text-slate-400 mt-1">{trainingPlan.rationale}</p>
+                    <h3 className="text-white font-bold">{responseTrainingPlan.title}</h3>
+                    <p className="text-xs text-slate-400 mt-1">{responseTrainingPlan.rationale}</p>
+                    <p className="mt-2 text-[11px] uppercase tracking-[0.2em] text-amber-300/90">
+                      {trainingDirective?.action === 'save_preset'
+                        ? 'Preset salvo. O treino atual só muda se você mandar.'
+                        : trainingDirective?.action === 'activate_preset'
+                        ? 'Preset ativado pela Anri.'
+                        : 'Troca pendente de confirmação.'}
+                    </p>
                     <div className="mt-3 space-y-3">
-                      {trainingPlan.drills.map((drill) => (
+                      {responseTrainingPlan.drills.map((drill) => (
                         <div key={`${msg.id}-${drill.title}`} className="rounded-xl border border-white/5 bg-white/[0.03] p-3">
                           <div className="flex items-center justify-between gap-3">
                             <span className="text-sm font-bold text-white uppercase tracking-wide">{drill.title}</span>
@@ -240,6 +315,32 @@ export default function AICoachChat() {
                         </div>
                       ))}
                     </div>
+                    {actionablePlan && trainingDirective?.action !== 'activate_preset' && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          onClick={() => setTrainingPlan(actionablePlan)}
+                          className="rounded-full bg-[#1d4ed8] px-3 py-2 text-[11px] font-mono uppercase tracking-[0.18em] text-white"
+                        >
+                          Trocar treino atual
+                        </button>
+                        <button
+                          onClick={() =>
+                            saveTrainingPreset(
+                              trainingDirective?.presetName || actionablePlan.title,
+                              {
+                                ...actionablePlan,
+                                source: 'anri',
+                                updatedAt: new Date().toISOString(),
+                              },
+                              'anri'
+                            )
+                          }
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-mono uppercase tracking-[0.18em] text-slate-300"
+                        >
+                          Salvar preset
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -318,7 +419,7 @@ export default function AICoachChat() {
 
         {isSending && (
           <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden border border-[#1d4ed8]/50 bg-[#151922] p-[1.5px]">
+            <div className={avatarFrameClass}>
               <img src="/anri.jpg" alt="Anri" className={anriAvatarImageClass} />
             </div>
             <div className="rounded-2xl rounded-tl-none border border-white/5 bg-[#162032] px-4 py-3 text-sm text-slate-400">

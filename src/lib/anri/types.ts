@@ -34,10 +34,33 @@ export interface AnriAthleteContext {
   recentHistory: AnriTrainingHistoryItem[];
 }
 
+export interface AnriEnvironmentContext {
+  weatherCondition: string;
+  weatherDescription: string;
+  temperatureC: number | null;
+  locationLabel: string;
+}
+
+export interface AnriPreferenceContext {
+  preferredFocuses: DrillType[];
+  sessionStyle: 'balanced' | 'aggressive' | 'recovery';
+  availableMinutes: number;
+  prefersOutdoor: boolean;
+}
+
+export interface AnriTrainingPresetContext {
+  id: string;
+  name: string;
+  focus: string;
+  rationale: string;
+  savedAt: string;
+}
+
 export interface AnriRequest {
   messages: AnriMessage[];
   chatMessages?: AnriChatMessage[];
   pendingAiMessageId?: string;
+  channel?: 'chat' | 'daily_automation';
   athlete: AnriAthleteContext;
   wikiEntries?: WikiEntry[];
   currentTraining?: TrainingDrill[];
@@ -49,6 +72,9 @@ export interface AnriRequest {
     drills: TrainingDrill[];
   };
   skillTree?: AnriAthleteSkillContext[];
+  environment?: AnriEnvironmentContext;
+  preferences?: AnriPreferenceContext;
+  trainingPresets?: AnriTrainingPresetContext[];
 }
 
 export interface SuggestedWikiEntry {
@@ -88,12 +114,19 @@ export interface SuggestedSkillTreeEntry {
   isPrerequisite: boolean;
 }
 
+export interface TrainingDirective {
+  action: 'none' | 'confirm_swap' | 'save_preset' | 'save_preset_and_confirm_swap' | 'activate_preset';
+  presetName: string | null;
+  reason: string;
+}
+
 export interface AnriExecutionPlan {
   intent: 'general_guidance' | 'training_adjustment' | 'wiki_creation' | 'hybrid';
   rationale: string;
   responseBrief: string;
   priorities: string[];
   trainingPlan: SuggestedTrainingPlan | null;
+  trainingDirective: TrainingDirective;
   wikiEntries: SuggestedWikiEntry[];
   skillTreeEntries: SuggestedSkillTreeEntry[];
 }
@@ -116,6 +149,7 @@ export interface AnriResponsePayload {
   rationale: string;
   suggestedNextPrompts: string[];
   trainingPlan: SuggestedTrainingPlan | null;
+  trainingDirective: TrainingDirective;
   wikiEntries: SuggestedWikiEntry[];
   skillTreeEntries: SuggestedSkillTreeEntry[];
 }
