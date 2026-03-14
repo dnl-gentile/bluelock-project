@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, CheckCircle2, ChevronDown, ChevronUp, MessageSquare, Target } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const MOCK_DRILLS = [
   {
@@ -48,7 +49,7 @@ const MOCK_DRILLS = [
 export default function TrainingRoom() {
   const [expandedDrill, setExpandedDrill] = useState<number | null>(MOCK_DRILLS[0].id);
   const [chatInput, setChatInput] = useState('');
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const todayStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -140,7 +141,7 @@ export default function TrainingRoom() {
         {/* Start Button & AI Tweaks */}
         <div className="space-y-6">
           <Link 
-            to="/drill/1"
+            href="/drill/1"
             className="w-full relative overflow-hidden group bg-gradient-to-br from-[#ff003c] to-[#990024] p-6 rounded-3xl flex flex-col items-center justify-center border border-[#ff003c]/50 hover:shadow-[0_0_40px_rgba(255,0,60,0.4)] transition-all cursor-pointer block text-center"
           >
             <div className="absolute inset-0 bg-[#1d4ed8] mix-blend-overlay opacity-0 group-hover:opacity-20 transition-opacity" />
@@ -171,9 +172,9 @@ export default function TrainingRoom() {
                 className="shrink-0 bg-[#162032] border border-white/10 hover:border-[#1d4ed8]/50 text-white rounded-xl px-4 py-2 sm:py-0 text-xs font-bold uppercase transition-colors"
                 onClick={() => {
                   if (chatInput.trim()) {
-                    navigate(`/chat?q=${encodeURIComponent(chatInput)}`);
+                    router.push(`/chat?q=${encodeURIComponent(chatInput)}`);
                   } else {
-                    navigate('/chat');
+                    router.push('/chat');
                   }
                 }}
               >

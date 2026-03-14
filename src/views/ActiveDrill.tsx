@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, RotateCcw, Swords, Flag } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -19,7 +19,7 @@ const DRILL_MOCK = {
 };
 
 export default function ActiveDrill() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { completeTraining } = useEgoStore();
   
   const [phase, setPhase] = useState<DrillPhase>('PREVIEW');
@@ -249,7 +249,7 @@ export default function ActiveDrill() {
             </div>
 
             <button 
-              onClick={() => navigate('/training')}
+              onClick={() => router.push('/training')}
               className="w-full bg-gradient-to-r from-[#1d4ed8] to-[#3b82f6] text-black rounded-2xl py-4 font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all hover:brightness-110 box-shadow-neon"
             >
               Continuar

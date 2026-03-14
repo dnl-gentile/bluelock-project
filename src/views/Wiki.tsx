@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Target, Brain, Footprints, ChevronDown, Bot, Play, Activity } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const CATEGORIES = [
   { id: 'chute', label: 'Chute', icon: Target, color: '#ff003c' },
@@ -37,7 +38,7 @@ const MOCK_WIKI_ENTRIES = {
 };
 
 export default function Wiki() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('chute');
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
 
@@ -139,7 +140,7 @@ export default function Wiki() {
           {/* AI Creation Bot Component Moved to Bottom */}
           <div className="mt-8 pt-6 border-t border-white/10">
             <p className="text-slate-400 font-mono text-xs uppercase mb-3 text-center">Precisa aprofundar um conceito? Solicite a inclusão.</p>
-            <button onClick={() => navigate('/chat?q=Quero adiconar uma entrada no Wiki')} className="w-full max-w-lg mx-auto bg-[#162032] border border-[#1d4ed8]/30 hover:border-[#1d4ed8] rounded-2xl p-4 flex items-center justify-center gap-3 transition-colors box-shadow-neon">
+            <button onClick={() => router.push('/chat?q=Quero adiconar uma entrada no Wiki')} className="w-full max-w-lg mx-auto bg-[#162032] border border-[#1d4ed8]/30 hover:border-[#1d4ed8] rounded-2xl p-4 flex items-center justify-center gap-3 transition-colors box-shadow-neon">
               <Bot className="w-6 h-6 text-[#1d4ed8]" />
               <div className="text-left">
                 <span className="block font-bold text-sm tracking-widest text-white uppercase">Criar via Blue Lockman (IA)</span>

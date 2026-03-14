@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Bot, User, ArrowLeft, Send } from 'lucide-react';
 
 interface ChatMessage {
@@ -13,8 +13,8 @@ interface ChatMessage {
 }
 
 export default function AICoachChat() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const initialQuery = searchParams.get('q');
   
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -62,9 +62,9 @@ export default function AICoachChat() {
   const handleActionClick = (action: NonNullable<ChatMessage['action']>) => {
     if (action.type === 'training_update') {
       alert('Treino fixado com sucesso. Navegando para o Treino do Dia...');
-      navigate('/training');
+      router.push('/training');
     } else if (action.type === 'wiki_entry') {
-      navigate('/wiki');
+      router.push('/wiki');
     }
   };
 
@@ -72,7 +72,7 @@ export default function AICoachChat() {
     <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)] max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 py-4 border-b border-white/5 shrink-0">
-        <button onClick={() => navigate(-1)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
+        <button onClick={() => router.push(-1)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
           <ArrowLeft className="w-5 h-5 text-slate-300" />
         </button>
         <Bot className="w-8 h-8 text-[#1d4ed8]" />

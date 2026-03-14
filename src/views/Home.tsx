@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CloudRain, Sun, Zap, Flame, Calendar, ChevronRight, UserSquare, ArrowRightLeft, History, Dumbbell } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { differenceInDays, isYesterday, isToday } from 'date-fns';
 import { useAuth } from '../lib/AuthContext';
@@ -78,7 +78,7 @@ export default function Home() {
     // Fetch Weather (Fake API call to openweathermap for demonstration, assuming user will add key)
     const fetchWeather = async () => {
       try {
-        const apiKey = import.meta.env.VITE_WEATHER_API_KEY;
+        const apiKey = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
         if (!apiKey) {
           // Mock data if no key is provided
           setWeather({ temp: 28, condition: 'Clear', description: 'Céu aberto, ideal para outdoor' });
@@ -235,7 +235,7 @@ export default function Home() {
 
       {/* Call to Action -> Training */}
       <Link 
-        to="/training"
+        href="/training"
         className="group relative w-full bg-gradient-to-r from-[#0a0e17] via-[#162032] to-[#0a0e17] border border-[#1d4ed8]/50 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between overflow-hidden transition-all hover:border-[#1d4ed8] hover:shadow-[0_0_30px_rgba(29,78,216,0.2)]"
       >
         <div className="absolute left-0 top-0 bottom-0 w-2 bg-[#1d4ed8] box-shadow-neon" />
