@@ -10,6 +10,7 @@ import { useAnriChatStore } from '@store/useAnriChatStore';
 import { useAuth } from '@lib/AuthContext';
 
 const anriAvatarImageClass = 'h-full w-full rounded-full object-cover object-[center_18%] scale-[0.9] transform-gpu';
+const userAvatarImageClass = 'h-full w-full rounded-full object-cover object-center';
 
 function createMessageId() {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -20,7 +21,7 @@ export default function AICoachChat() {
   const router = useRouter();
   const initialQuery = searchParams.get('q');
   const hasBootstrappedInitialQuery = useRef(false);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { xp, rank, skills, history, upsertSkills } = useEgoStore();
   const { wikiEntries, trainingPlan, addWikiEntries, setTrainingPlan } = useBlueLockContentStore();
   const messages = useAnriChatStore((state) => state.messages);
@@ -195,6 +196,8 @@ export default function AICoachChat() {
               <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${isAI ? 'border border-[#1d4ed8]/50 bg-[#151922] p-[1.5px]' : 'bg-white/10'}`}>
                 {isAI ? (
                   <img src="/anri.jpg" alt="Anri" className={anriAvatarImageClass} />
+                ) : profile?.photoURL ? (
+                  <img src={profile.photoURL} alt={profile.name || 'Jogador'} className={userAvatarImageClass} />
                 ) : (
                   <User className="w-4 h-4 text-slate-300" />
                 )}

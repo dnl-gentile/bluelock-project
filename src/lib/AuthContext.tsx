@@ -11,6 +11,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
 export type UserRole = 'trainee' | 'coach' | null;
+const BERNARDO_PROFILE_PHOTO_URL = '/bernardo-profile-pic.jpg';
 
 interface UserProfile {
   uid: string;
@@ -31,6 +32,24 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
+
+function withDefaultProfilePhoto(profile: UserProfile, authPhotoURL?: string | null) {
+  if (profile.role === 'trainee' && profile.name.trim().toLowerCase() === 'bernardo') {
+    return {
+      ...profile,
+      photoURL: BERNARDO_PROFILE_PHOTO_URL,
+    };
+  }
+
+  if (!profile.photoURL && authPhotoURL) {
+    return {
+      ...profile,
+      photoURL: authPhotoURL,
+    };
+  }
+
+  return profile;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -54,7 +73,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const docSnap = await getDoc(docRef);
             
             if (docSnap.exists()) {
-              setProfile(docSnap.data() as UserProfile);
+              const storedProfile = docSnap.data() as UserProfile;
+              const hydratedProfile = withDefaultProfilePhoto(storedProfile, currentUser.photoURL);
+
+              if (hydratedProfile.photoURL !== storedProfile.photoURL) {
+                await setDoc(docRef, hydratedProfile, { merge: true });
+              }
+
+              setProfile(hydratedProfile);
             } else {
               setProfile(null); // Needs onboarding
             }
@@ -92,15 +118,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setRole = async (role: UserRole, name: string) => {
     if (!user || !db) return;
     
-    const newProfile: UserProfile = {
+    const newProfile = withDefaultProfilePhoto({
       uid: user.uid,
       role,
       name
-    };
-    
-    if (user.photoURL) {
-      newProfile.photoURL = user.photoURL;
-    }
+    }, user.photoURL);
     
     await setDoc(doc(db, 'users', user.uid), newProfile);
     setProfile(newProfile);

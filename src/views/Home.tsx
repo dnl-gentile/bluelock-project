@@ -108,11 +108,22 @@ export default function Home() {
       
       {/* User Hello & Weather Row */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0a0e17] p-5 rounded-3xl border border-white/5 box-shadow-neon">
-        <div>
-          <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
-            Eaí, {profile?.name || 'Egoísta'}.
-          </h1>
-          <p className="text-sm text-slate-400 font-mono">Preparado para devorar o campo hoje?</p>
+        <div className="flex items-center gap-4">
+          {profile?.photoURL && (
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-[#1d4ed8]/30 bg-[#151922] p-[2px]">
+              <img
+                src={profile.photoURL}
+                alt={profile.name}
+                className="h-full w-full rounded-[14px] object-cover object-center"
+              />
+            </div>
+          )}
+          <div>
+            <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
+              Eaí, {profile?.name || 'Egoísta'}.
+            </h1>
+            <p className="text-sm text-slate-400 font-mono">Preparado para devorar o campo hoje?</p>
+          </div>
         </div>
         
         {weather && (
