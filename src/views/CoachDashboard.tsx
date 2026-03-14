@@ -12,7 +12,8 @@ import type { AnriChatMessage, AnriMessage, AnriResponsePayload } from '@lib/anr
 import {
   Shield, Users, TrendingUp, Zap, MessageSquare, Settings, CheckCircle2,
   BookOpen, GitBranch, Dumbbell, Send, AtSign, PlusCircle, Pencil,
-  Trash2, Save, X, ChevronDown, ChevronUp, Calendar, BarChart2, Eye
+  Trash2, Save, X, ChevronDown, ChevronUp, Calendar, BarChart2, Eye,
+  LogOut
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -23,7 +24,7 @@ function createMessageId() {
 }
 
 export default function CoachDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, logout } = useAuth();
   const { xp, rank, skills, history, upsertSkills } = useEgoStore();
   const {
     wikiEntries, trainingPlan, trainingPresets,
@@ -164,15 +165,22 @@ export default function CoachDashboard() {
 
   return (
     <div className="flex flex-col space-y-6 max-w-5xl mx-auto py-6 pb-24">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 px-2">
         <div>
           <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500 uppercase tracking-tighter">
             Painel Mestre
           </h1>
-          <p className="text-slate-400 font-mono text-sm mt-1">
-            Treinador: <span className="text-orange-500 font-bold">{profile?.name || 'Mestre'}</span>
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-slate-400 font-mono text-sm">
+              Treinador: <span className="text-orange-500 font-bold">{profile?.name || 'Mestre'}</span>
+            </p>
+            <button 
+              onClick={() => logout()}
+              className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest text-red-500/70 hover:text-red-500 transition-colors"
+            >
+              <LogOut className="w-3 h-3" /> [Sair]
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Shield className="w-5 h-5 text-orange-500" />
