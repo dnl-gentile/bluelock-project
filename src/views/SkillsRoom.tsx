@@ -1,67 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Unlock, Flame, Wind, Eye, Brain, Activity, Target, X } from 'lucide-react';
-import { useEgoStore, type SkillType } from '../store/useEgoStore';
-
-const SKILL_POSITIONS: Record<string, {x: number, y: number}> = {
-  // Chute x: 400
-  'c1': { x: 400, y: 600 },
-  'c2': { x: 400, y: 900 },
-  'c3': { x: 400, y: 1200 },
-  'c4': { x: 400, y: 1500 },
-  'c5': { x: 400, y: 1800 },
-  
-  // Velocidade x: 750
-  'v1': { x: 750, y: 600 },
-  'v2': { x: 750, y: 900 },
-  'v3': { x: 750, y: 1200 },
-  'v4': { x: 750, y: 1500 },
-  'v5': { x: 750, y: 1800 },
-  
-  // Drible x: 1100
-  'd1': { x: 1100, y: 600 },
-  'd2': { x: 1100, y: 900 },
-  'd3': { x: 1100, y: 1200 },
-  'd4': { x: 1100, y: 1500 },
-  'd5': { x: 1100, y: 1800 },
-  
-  // Mentalidade x: 1450
-  'm1': { x: 1450, y: 600 },
-  'm2': { x: 1450, y: 900 },
-  'm3': { x: 1450, y: 1200 },
-  'm4': { x: 1450, y: 1500 },
-  'm5': { x: 1450, y: 1800 },
-  
-  // Passe x: 1800
-  'p1': { x: 1800, y: 600 },
-  'p2': { x: 1800, y: 900 },
-  'p3': { x: 1800, y: 1200 },
-  'p4': { x: 1800, y: 1500 },
-  
-  // Resistencia x: 2150
-  'r1': { x: 2150, y: 600 },
-  'r2': { x: 2150, y: 900 },
-  'r3': { x: 2150, y: 1200 },
-  'r4': { x: 2150, y: 1500 },
-};
+import { Lock, Unlock, Flame, Wind, Eye, Brain, Activity, Target, X, AlertTriangle } from 'lucide-react';
+import { getSkillAlerts, useEgoStore, type Skill, type SkillType } from '../store/useEgoStore';
+import type { SkillTier } from '@lib/bluelock-taxonomy';
 
 const CENTER_X = 1275;
 const START_Y = 260;
 const EGO_CENTER = { x: CENTER_X, y: START_Y };
 
-const getPos = (id: string) => {
-  const p = SKILL_POSITIONS[id];
-  if (!p) return EGO_CENTER;
-  return p;
-};
-
 const COLUMNS = [
-  { id: 'chute', label: 'Chute / Finalização', color: 'rgba(255,0,60,1)', x: 400 },
-  { id: 'velocidade', label: 'Velocidade', color: 'rgba(29,78,216,1)', x: 750 },
-  { id: 'drible', label: 'Drible & Agilidade', color: 'rgba(59,130,246,1)', x: 1100 },
-  { id: 'mentalidade', label: 'Cérebro / Visão', color: 'rgba(192,132,252,1)', x: 1450 },
-  { id: 'passe', label: 'Passe & Tabelas', color: 'rgba(245,158,11,1)', x: 1800 },
-  { id: 'resistencia', label: 'Resistência Física', color: 'rgba(16,185,129,1)', x: 2150 },
+  { id: 'chute' as const, label: 'Chute / Finalização', color: 'rgba(255,0,60,1)', x: 400 },
+  { id: 'velocidade' as const, label: 'Velocidade', color: 'rgba(29,78,216,1)', x: 750 },
+  { id: 'drible' as const, label: 'Drible & Agilidade', color: 'rgba(59,130,246,1)', x: 1100 },
+  { id: 'mentalidade' as const, label: 'Cérebro / Visão', color: 'rgba(192,132,252,1)', x: 1450 },
+  { id: 'passe' as const, label: 'Passe & Tabelas', color: 'rgba(245,158,11,1)', x: 1800 },
+  { id: 'resistencia' as const, label: 'Resistência Física', color: 'rgba(16,185,129,1)', x: 2150 },
 ];
 
 const RANKS = [
@@ -72,11 +25,71 @@ const RANKS = [
   { id: 'V', label: 'Tier 5 - Nível Mundial', y: 1800 },
 ];
 
+const COLUMN_X: Record<SkillType, number> = {
+  chute: 400,
+  velocidade: 750,
+  drible: 1100,
+  mentalidade: 1450,
+  passe: 1800,
+  resistencia: 2150,
+};
+
+const TIER_Y: Record<SkillTier, number> = {
+  1: 600,
+  2: 900,
+  3: 1200,
+  4: 1500,
+  5: 1800,
+};
+
+function getSkillPositionMap(skills: Skill[]) {
+  const groups = new Map<string, Skill[]>();
+
+  for (const skill of skills) {
+    const groupKey = `${skill.type}-${skill.tier}`;
+    const currentGroup = groups.get(groupKey) ?? [];
+    currentGroup.push(skill);
+    groups.set(groupKey, currentGroup);
+  }
+
+  const positions: Record<string, { x: number; y: number }> = {};
+
+  for (const group of groups.values()) {
+    const orderedGroup = [...group].sort((left, right) => {
+      if (left.createdBy !== right.createdBy) {
+        return left.createdBy === 'system' ? -1 : 1;
+      }
+      if (left.requiredXp !== right.requiredXp) {
+        return left.requiredXp - right.requiredXp;
+      }
+      return left.name.localeCompare(right.name, 'pt-BR');
+    });
+
+    const baseX = COLUMN_X[orderedGroup[0].type];
+    const baseY = TIER_Y[orderedGroup[0].tier];
+    const spacing = orderedGroup.length > 3 ? 82 : 104;
+    const startOffset = ((orderedGroup.length - 1) * spacing) / 2;
+
+    orderedGroup.forEach((skill, index) => {
+      const oscillation = orderedGroup.length > 1 ? (index % 2 === 0 ? -18 : 18) : 0;
+      positions[skill.id] = {
+        x: baseX - startOffset + index * spacing,
+        y: baseY + oscillation,
+      };
+    });
+  }
+
+  return positions;
+}
+
 export default function SkillsRoom() {
   const { skills, xp } = useEgoStore();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [windowWidth, setWindowWidth] = useState(1000);
+  const skillPositions = getSkillPositionMap(skills);
+
+  const getPos = (id: string) => skillPositions[id] ?? EGO_CENTER;
 
   useEffect(() => {
     setWindowWidth(window.innerWidth);
@@ -271,9 +284,11 @@ export default function SkillsRoom() {
           {skills.map(skill => {
             const pos = getPos(skill.id);
             const isUnlocked = skill.unlocked;
-            const canUnlock = !isUnlocked && xp >= skill.requiredXp && skill.dependencies.every(d => skills.find(s => s.id === d)?.unlocked);
+            const canUnlock = !isUnlocked && xp >= skill.requiredXp;
             const isExpanded = expandedId === skill.id;
             const colorScheme = getTypeColor(skill.type);
+            const alerts = getSkillAlerts(skill, skills);
+            const hasAlerts = alerts.length > 0;
 
             return (
               <div 
@@ -298,6 +313,12 @@ export default function SkillsRoom() {
                     boxShadow: isUnlocked ? `0 0 15px ${colorScheme.split(' ')[1].replace('/30)', ')').replace('border-', '')}` : undefined
                   }}
                 >
+                  {hasAlerts && !isExpanded && (
+                    <div className="absolute right-2 top-2 rounded-full border border-amber-400/20 bg-amber-400/10 p-1 text-amber-300">
+                      <AlertTriangle className="h-3 w-3" />
+                    </div>
+                  )}
+
                   {/* Collapsed View (Icon only) */}
                   <motion.div layout="position" className={`p-4 ${isExpanded ? 'pb-2' : ''}`}>
                     {getIcon(skill.type, `w-6 h-6 ${isUnlocked ? colorScheme.split(' ')[0] : 'text-slate-400'}`)}
@@ -318,6 +339,17 @@ export default function SkillsRoom() {
                         <p className="text-[10px] text-center text-slate-400 mb-4 leading-snug font-medium">
                           {skill.description}
                         </p>
+
+                        {hasAlerts && (
+                          <div className="mb-4 w-full space-y-2 rounded-xl border border-amber-400/15 bg-amber-400/5 p-3 text-left">
+                            {alerts.map((alert) => (
+                              <div key={`${skill.id}-${alert.kind}-${alert.message}`} className="flex gap-2 text-[10px] leading-snug text-amber-100/80">
+                                <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-300" />
+                                <span>{alert.message}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         
                         <div className="mt-auto w-full pt-3 border-t border-white/10 flex justify-between items-center">
                            <div className="flex gap-1 items-center bg-black/60 px-2 py-1.5 rounded-md border border-white/5">
@@ -325,14 +357,24 @@ export default function SkillsRoom() {
                              <span className="text-[10px] font-bold text-slate-300">{skill.requiredXp} XP</span>
                            </div>
                            
-                           {!isUnlocked && canUnlock && (
+                           {!isUnlocked && canUnlock && !hasAlerts && (
                              <span className="text-[9px] bg-[#1d4ed8]/20 text-[#1d4ed8] border border-[#1d4ed8]/30 px-2 py-1 rounded font-bold uppercase animate-pulse">
                                Disponível
                              </span>
                            )}
+                           {!isUnlocked && canUnlock && hasAlerts && (
+                             <span className="text-[9px] bg-amber-400/10 text-amber-300 border border-amber-400/20 px-2 py-1 rounded font-bold uppercase">
+                               Com alerta
+                             </span>
+                           )}
                            {!isUnlocked && !canUnlock && (
-                             <span className="text-[9px] bg-red-500/10 text-red-500/50 border border-red-500/20 px-2 py-1 rounded font-bold uppercase">
-                               Bloqueado
+                             <span className="text-[9px] bg-white/5 text-slate-500 border border-white/10 px-2 py-1 rounded font-bold uppercase">
+                               Aguardando XP
+                             </span>
+                           )}
+                           {isUnlocked && hasAlerts && (
+                             <span className="text-[9px] bg-amber-400/10 text-amber-300 border border-amber-400/20 px-2 py-1 rounded font-bold uppercase">
+                               Atenção
                              </span>
                            )}
                         </div>

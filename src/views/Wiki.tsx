@@ -3,46 +3,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Target, Brain, Footprints, ChevronDown, MessageSquare, Play, Activity } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import {
+  WIKI_CATEGORIES,
+  type WikiCategoryId,
+} from '@lib/bluelock-content';
+import { useBlueLockContentStore } from '@store/useBlueLockContentStore';
 
-const CATEGORIES = [
-  { id: 'chute', label: 'Chute', icon: Target, color: '#ff003c' },
-  { id: 'velocidade', label: 'Velocidade', icon: Activity, color: '#1d4ed8' },
-  { id: 'drible', label: 'Drible', icon: Footprints, color: '#3b82f6' },
-  { id: 'tática', label: 'Tática/Visão', icon: Brain, color: '#c084fc' },
-  { id: 'passe', label: 'Passe', icon: Target, color: '#f59e0b' },
-  { id: 'resistencia', label: 'Resistência', icon: Activity, color: '#10b981' },
-];
-
-const MOCK_WIKI_ENTRIES = {
-  chute: [
-    { title: 'Chute de Peito de Pé (Laces)', text: 'O chute mais potente. Você atinge a bola com o osso rígido na parte superior do pé (onde ficam os cadarços). É ideal para finalizações de média e longa distância.', drillId: 3 },
-    { title: 'Chute Direto (Volley)', text: 'Pegar a bola no ar antes que ela caia. Exige tempo de bola, os olhos não podem desgrudar dela. Incline o corpo por cima do chute para manter a bola baixa.', drillId: null },
-  ],
-  drible: [
-    { title: 'Drible Fantasma (Tesoura)', text: 'Passe o pé por cima da bola, de dentro para fora, ameaçando ir para um lado. Com o outro pé, empurre a bola para o lado oposto e acelere.', drillId: 2 },
-    { title: 'Drible da Vaca / Meia Lua', text: 'Tocar a bola por um lado do oponente e correr pelo outro lado. Exige que o oponente esteja desatento ou muito pesado nos calcanhares.', drillId: null },
-  ],
-  tática: [
-    { title: 'Metavisão', text: 'Escaneamento constante. Antes de receber a bola, olhe por cima dos ombros. Desenhe um mapa do campo na sua cabeça: onde estão seus aliados e os inimigos.', drillId: null },
-    { title: 'Isolamento (1v1)', text: 'Arraste o defensor para uma área do campo onde não há cobertura zagueiros.', drillId: null }
-  ],
-  velocidade: [
-    { title: 'Aceleração de Resposta', text: 'Corridas curtas de 10m focando na explosão dos três primeiros passos. Corpo projetado à frente.', drillId: 1 }
-  ],
-  passe: [
-    { title: 'Passe Fatiado (Trivela Cruzada)', text: 'Bater na bola com os 3 dedos de fora arrastando lateralmente contra a grama. Faz com que a bola assuma o trajeto curvilíneo que desvia da barreira de bloqueio antes de voltar fatalmente para a linha de chute do atacante.', drillId: null }
-  ],
-  resistencia: [
-    { title: 'Descanso Celular Ativo', text: 'Treinamento sobre como caminhar e regular o ritmo de exalação e inalação nasal nos milissegundos mortos em que o juiz assopra o apito ou a bola cruza a linha lateral.', drillId: null }
-  ]
-};
+const CATEGORY_ICONS = {
+  chute: Target,
+  velocidade: Activity,
+  drible: Footprints,
+  tatica: Brain,
+  passe: Target,
+  resistencia: Activity,
+} as const;
 
 export default function Wiki() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('chute');
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
+  const wikiEntries = useBlueLockContentStore((state) => state.wikiEntries);
 
-  const activeEntries = MOCK_WIKI_ENTRIES[activeTab as keyof typeof MOCK_WIKI_ENTRIES] || [];
+  const activeEntries = wikiEntries[activeTab as WikiCategoryId] || [];
 
   return (
     <div className="flex flex-col space-y-8 max-w-5xl mx-auto py-6">
@@ -57,8 +39,8 @@ export default function Wiki() {
         {/* Wiki Content Panel */}
         <div className="space-y-6">
           <div className="flex gap-2 p-1 bg-[#162032] rounded-2xl overflow-x-auto no-scrollbar border border-white/5">
-            {CATEGORIES.map(cat => {
-              const Icon = cat.icon;
+            {WIKI_CATEGORIES.map(cat => {
+              const Icon = CATEGORY_ICONS[cat.id];
               const isActive = activeTab === cat.id;
               return (
                 <button
@@ -87,7 +69,7 @@ export default function Wiki() {
               >
                 {activeEntries.map((entry, idx) => {
                   const isExpanded = expandedEntry === entry.title;
-                  const ringColor = CATEGORIES.find(c => c.id === activeTab)?.color || '#fff';
+                  const ringColor = WIKI_CATEGORIES.find((category) => category.id === activeTab)?.color || '#fff';
                   
                   return (
                     <div key={idx} className="bg-[#0a0e17] rounded-2xl border border-white/10 overflow-hidden transition-all hover:border-white/20">

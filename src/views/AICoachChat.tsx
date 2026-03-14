@@ -1,78 +1,172 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MessageSquare, User, ArrowLeft, Send } from 'lucide-react';
-
-interface ChatMessage {
-  id: string;
-  sender: 'ai' | 'user';
-  text: string;
-  action?: {
-    type: 'training_update' | 'wiki_entry';
-    label: string;
-  };
-}
+import { AlertTriangle, ArrowLeft, Brain, BookOpen, Send, Sparkles, User } from 'lucide-react';
+import { useEgoStore } from '../store/useEgoStore';
+import { flattenWikiEntries } from '@lib/bluelock-content';
+import type { AnriChatMessage, AnriMessage, AnriResponsePayload } from '@lib/anri/types';
+import { materializeSkillTreeEntries, materializeTrainingPlan, materializeWikiEntries } from '@lib/anri/apply';
+import { useBlueLockContentStore } from '@store/useBlueLockContentStore';
+import { useAnriChatStore } from '@store/useAnriChatStore';
+import { useAuth } from '@lib/AuthContext';
 
 const anriAvatarImageClass = 'h-full w-full rounded-full object-cover object-[center_18%] scale-[0.9] transform-gpu';
+
+function createMessageId() {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 export default function AICoachChat() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialQuery = searchParams.get('q');
-  
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      sender: 'ai',
-      text: 'Olá! Eu sou a Anri, assistente do Ego. Precisa alterar a carga do treino, trocar o foco para outro fundamento, ou quer perguntar algo para a Bluelockpedia?'
-    }
-  ]);
+  const hasBootstrappedInitialQuery = useRef(false);
+  const { user } = useAuth();
+  const { xp, rank, skills, history, upsertSkills } = useEgoStore();
+  const { wikiEntries, trainingPlan, addWikiEntries, setTrainingPlan } = useBlueLockContentStore();
+  const messages = useAnriChatStore((state) => state.messages);
+  const appendMessage = useAnriChatStore((state) => state.appendMessage);
   const [input, setInput] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const sendMessage = useEffectEvent(async (rawText: string) => {
+    const text = rawText.trim();
+    if (!text || isSending) return;
+
+    const userMessage: AnriChatMessage = {
+      id: createMessageId(),
+      sender: 'user',
+      text,
+    };
+    const pendingAiMessageId = createMessageId();
+    const chatMessages = [...messages, userMessage];
+
+    const conversation: AnriMessage[] = chatMessages.map((message) => ({
+      sender: message.sender,
+      text: message.text,
+    }));
+
+    const athlete = {
+      xp,
+      rank,
+      unlockedSkills: skills
+        .filter((skill) => skill.unlocked)
+        .map((skill) => ({
+          id: skill.id,
+          name: skill.name,
+          type: skill.type,
+          tier: skill.tier,
+          requiredXp: skill.requiredXp,
+          unlocked: skill.unlocked,
+          dependencyNames: skill.dependencies
+            .map((dependencyId) => skills.find((candidate) => candidate.id === dependencyId)?.name)
+            .filter((dependencyName): dependencyName is string => Boolean(dependencyName)),
+        })),
+      lockedSkillCount: skills.filter((skill) => !skill.unlocked).length,
+      recentHistory: history.slice(0, 5).map((entry) => ({
+        type: entry.type,
+        xpEarned: entry.xpEarned,
+        date: entry.date,
+      })),
+    };
+
+    appendMessage(userMessage);
+    setInput('');
+    setError(null);
+    setIsSending(true);
+
+    try {
+      const idToken = user ? await user.getIdToken() : null;
+      const response = await fetch('/api/anri', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
+        body: JSON.stringify({
+          messages: conversation,
+          chatMessages,
+          pendingAiMessageId,
+          athlete,
+          wikiEntries: flattenWikiEntries(wikiEntries),
+          currentTraining: trainingPlan.drills,
+          currentTrainingPlan: trainingPlan,
+          skillTree: skills.map((skill) => ({
+            id: skill.id,
+            name: skill.name,
+            type: skill.type,
+            tier: skill.tier,
+            requiredXp: skill.requiredXp,
+            description: skill.description,
+            createdBy: skill.createdBy,
+            linkedWikiEntryTitle: skill.linkedWikiEntryTitle,
+            unlocked: skill.unlocked,
+            dependencyIds: skill.dependencies,
+            dependencyNames: skill.dependencies
+              .map((dependencyId) => skills.find((candidate) => candidate.id === dependencyId)?.name)
+              .filter((dependencyName): dependencyName is string => Boolean(dependencyName)),
+          })),
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Falha ao consultar a Anri.');
+      }
+
+      const aiMessage: AnriChatMessage = {
+        id: pendingAiMessageId,
+        sender: 'ai',
+        text: payload.reply,
+        response: payload,
+      };
+
+      if (payload.wikiEntries?.length) {
+        addWikiEntries(materializeWikiEntries(payload.wikiEntries));
+      }
+
+      if (payload.trainingPlan) {
+        setTrainingPlan(materializeTrainingPlan(payload.trainingPlan, trainingPlan.drills));
+      }
+
+      if (payload.skillTreeEntries?.length) {
+        upsertSkills(materializeSkillTreeEntries(payload.skillTreeEntries, skills));
+      }
+
+      appendMessage(aiMessage);
+    } catch (sendError) {
+      const message =
+        sendError instanceof Error ? sendError.message : 'A Anri não conseguiu responder agora.';
+
+      setError(message);
+      appendMessage({
+        id: createMessageId(),
+        sender: 'ai',
+        text: 'Não consegui acessar meus dados agora. Se a chave do Gemini ainda não estiver configurada, essa é a primeira coisa para ligar.',
+      });
+    } finally {
+      setIsSending(false);
+    }
+  });
 
   useEffect(() => {
-    if (initialQuery) {
-      handleSend(initialQuery);
-    }
-  }, []);
+    if (!initialQuery || hasBootstrappedInitialQuery.current) return;
+    hasBootstrappedInitialQuery.current = true;
+    void sendMessage(initialQuery);
+  }, [initialQuery, sendMessage]);
 
-  const handleSend = (text: string) => {
-    if (!text.trim()) return;
-    
-    const newUserMsg: ChatMessage = { id: Date.now().toString(), sender: 'user', text };
-    setMessages(prev => [...prev, newUserMsg]);
-    setInput('');
-    
-    // Simulate AI response
-    setTimeout(() => {
-      let aiText = 'Estou refatorando os dados...';
-      let action: ChatMessage['action'] = undefined;
-      
-      const lower = text.toLowerCase();
-      if (lower.includes('treino') || lower.includes('drible') || lower.includes('chute') || lower.includes('refatorar')) {
-        aiText = 'Legal. Entendi que você quer focar mais nisso hoje. Gerei um novo protocolo priorizando volume nesse fundamento.';
-        action = { type: 'training_update', label: 'Aceitar e Fixar Novo Treino' };
-      } else if (lower.includes('wiki') || lower.includes('o que é') || lower.includes('explica')) {
-        aiText = 'Busquei isso nos dados globais. Adicionei uma nova entrada completa na Bluelockpedia para você consultar depois. Você pode acessar também para treinar essa técnica.';
-        action = { type: 'wiki_entry', label: 'Ver na Bluelockpedia' };
-      } else {
-        aiText = 'Analisei sua mensagem. Para progredirmos, escolha se quer atualizar o treino atual ou apenas tirar uma dúvida técnica.';
-      }
-      
-      setMessages(prev => [...prev, { id: Date.now().toString() + 'ai', sender: 'ai', text: aiText, action }]);
-    }, 1200);
-  };
-
-  const handleActionClick = (action: NonNullable<ChatMessage['action']>) => {
-    if (action.type === 'training_update') {
-      alert('Treino fixado com sucesso. Navegando para o Treino do Dia...');
-      router.push('/training');
-    } else if (action.type === 'wiki_entry') {
-      router.push('/wiki');
-    }
-  };
+  const latestAiResponse = [...messages].reverse().find((message) => message.sender === 'ai' && message.response)?.response;
+  const suggestedPrompts = latestAiResponse?.suggestedNextPrompts?.length
+    ? latestAiResponse.suggestedNextPrompts
+    : [
+        'Ajuste meu treino para foco em passes.',
+        'Explique o que é metavisão.',
+        'Estou cansado, monte um treino mais leve.',
+      ];
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)] max-w-3xl mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-3 py-4 border-b border-white/5 shrink-0">
         <button onClick={() => router.back()} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
           <ArrowLeft className="w-5 h-5 text-slate-300" />
@@ -83,16 +177,19 @@ export default function AICoachChat() {
         <div>
           <h1 className="text-xl font-bold font-display uppercase tracking-wider text-white">Anri</h1>
           <p className="flex items-center gap-2 text-xs font-mono text-slate-500 uppercase">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
-            <span>Status: Online</span>
+            <span className={`w-2 h-2 rounded-full ${isSending ? 'bg-amber-300' : 'bg-emerald-400'} shadow-[0_0_10px_rgba(52,211,153,0.9)]`} />
+            <span>{isSending ? 'Analisando Contexto' : 'Status: Online'}</span>
           </p>
         </div>
       </div>
 
-      {/* Chat History */}
       <div className="flex-1 overflow-y-auto py-6 space-y-6 scroll-smooth px-2 no-scrollbar">
-        {messages.map(msg => {
+        {messages.map((msg) => {
           const isAI = msg.sender === 'ai';
+          const trainingPlan = msg.response?.trainingPlan;
+          const wikiEntries = msg.response?.wikiEntries ?? [];
+          const skillTreeEntries = msg.response?.skillTreeEntries ?? [];
+
           return (
             <div key={msg.id} className={`flex gap-3 ${isAI ? 'flex-row' : 'flex-row-reverse'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${isAI ? 'border border-[#1d4ed8]/50 bg-[#151922] p-[1.5px]' : 'bg-white/10'}`}>
@@ -102,50 +199,181 @@ export default function AICoachChat() {
                   <User className="w-4 h-4 text-slate-300" />
                 )}
               </div>
-              <div className={`flex flex-col ${isAI ? 'items-start' : 'items-end'} max-w-[80%]`}>
+
+              <div className={`flex flex-col ${isAI ? 'items-start' : 'items-end'} max-w-[86%]`}>
                 <div className={`p-4 rounded-2xl text-sm ${
-                  isAI 
-                    ? 'bg-[#162032] border border-white/5 text-slate-300 rounded-tl-none' 
+                  isAI
+                    ? 'bg-[#162032] border border-white/5 text-slate-300 rounded-tl-none'
                     : 'bg-[#1d4ed8] text-white rounded-tr-none'
                 }`}>
                   {msg.text}
                 </div>
-                {msg.action && (
-                  <button 
-                    onClick={() => handleActionClick(msg.action!)}
-                    className="mt-2 bg-[#050505] border border-[#1d4ed8]/50 text-[#1d4ed8] box-shadow-neon px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all hover:bg-[#1d4ed8]/10"
-                  >
-                    {msg.action.label}
-                  </button>
+
+                {trainingPlan && (
+                  <div className="mt-3 w-full rounded-2xl border border-[#1d4ed8]/30 bg-[#0a0e17] p-4 box-shadow-neon">
+                    <div className="flex items-center gap-2 text-[#1d4ed8] mb-2">
+                      <Sparkles className="w-4 h-4" />
+                      <span className="text-[11px] font-mono uppercase tracking-[0.24em]">Plano Sugerido</span>
+                    </div>
+                    <h3 className="text-white font-bold">{trainingPlan.title}</h3>
+                    <p className="text-xs text-slate-400 mt-1">{trainingPlan.rationale}</p>
+                    <div className="mt-3 space-y-3">
+                      {trainingPlan.drills.map((drill) => (
+                        <div key={`${msg.id}-${drill.title}`} className="rounded-xl border border-white/5 bg-white/[0.03] p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-sm font-bold text-white uppercase tracking-wide">{drill.title}</span>
+                            <span className="text-[10px] rounded-full bg-[#1d4ed8]/15 px-2 py-1 font-mono uppercase text-[#60a5fa]">
+                              {drill.type}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-xs text-slate-400">{drill.description}</p>
+                          <ul className="mt-3 space-y-1.5">
+                            {drill.topics.map((topic) => (
+                              <li key={topic} className="text-xs text-slate-300">
+                                • {topic}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {wikiEntries.length > 0 && (
+                  <div className="mt-3 w-full rounded-2xl border border-white/10 bg-[#0a0e17] p-4">
+                    <div className="flex items-center gap-2 text-[#c084fc] mb-2">
+                      <BookOpen className="w-4 h-4" />
+                      <span className="text-[11px] font-mono uppercase tracking-[0.24em]">Entradas de Wiki</span>
+                    </div>
+                    <div className="space-y-3">
+                      {wikiEntries.map((entry) => (
+                        <div key={`${msg.id}-${entry.title}`} className="rounded-xl border border-white/5 bg-white/[0.03] p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <h3 className="text-sm font-bold text-white">{entry.title}</h3>
+                            <span className="text-[10px] rounded-full bg-white/5 px-2 py-1 font-mono uppercase text-slate-400">
+                              {entry.category}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-xs text-slate-300 leading-relaxed">{entry.text}</p>
+                          <p className="mt-2 text-[11px] text-slate-500">{entry.reason}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {skillTreeEntries.length > 0 && (
+                  <div className="mt-3 w-full rounded-2xl border border-[#1d4ed8]/20 bg-[#0a0e17] p-4">
+                    <div className="flex items-center gap-2 text-[#1d4ed8] mb-2">
+                      <Brain className="w-4 h-4" />
+                      <span className="text-[11px] font-mono uppercase tracking-[0.24em]">Árvore do Ego</span>
+                    </div>
+                    <div className="space-y-3">
+                      {skillTreeEntries.map((entry) => (
+                        <div key={`${msg.id}-${entry.name}`} className="rounded-xl border border-white/5 bg-white/[0.03] p-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-sm font-bold text-white">{entry.name}</h3>
+                            <span className="text-[10px] rounded-full bg-[#1d4ed8]/15 px-2 py-1 font-mono uppercase text-[#60a5fa]">
+                              Tier {entry.tier}
+                            </span>
+                            <span className="text-[10px] rounded-full bg-white/5 px-2 py-1 font-mono uppercase text-slate-400">
+                              {entry.type}
+                            </span>
+                            {entry.isPrerequisite && (
+                              <span className="text-[10px] rounded-full bg-amber-400/10 px-2 py-1 font-mono uppercase text-amber-300">
+                                Pré-requisito inferido
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-2 text-xs text-slate-300 leading-relaxed">{entry.description}</p>
+                          {entry.dependencyTitles.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {entry.dependencyTitles.map((dependencyTitle) => (
+                                <span
+                                  key={`${entry.name}-${dependencyTitle}`}
+                                  className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-1 text-[10px] uppercase tracking-wide text-slate-400"
+                                >
+                                  {dependencyTitle}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-400/15 bg-amber-400/5 px-3 py-2 text-[11px] text-amber-100/80">
+                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" />
+                            <span>{entry.reason}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
-          )
+          );
         })}
+
+        {isSending && (
+          <div className="flex gap-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden border border-[#1d4ed8]/50 bg-[#151922] p-[1.5px]">
+              <img src="/anri.jpg" alt="Anri" className={anriAvatarImageClass} />
+            </div>
+            <div className="rounded-2xl rounded-tl-none border border-white/5 bg-[#162032] px-4 py-3 text-sm text-slate-400">
+              Anri está montando sua resposta com base no seu contexto...
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Input Area */}
       <div className="py-4 shrink-0">
+        {error && (
+          <div className="mb-3 rounded-xl border border-red-500/30 bg-red-950/30 px-3 py-2 text-xs text-red-300">
+            {error}
+          </div>
+        )}
+
         <div className="p-2 bg-[#0a0e17] border border-white/10 rounded-2xl flex items-center gap-2">
-          <input 
+          <input
             type="text"
             className="flex-1 bg-transparent px-3 py-2 text-white placeholder-slate-600 focus:outline-none font-mono text-sm"
             placeholder="Mude meu treino ou faça uma pergunta..."
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend(input)}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                void sendMessage(input);
+              }
+            }}
+            disabled={isSending}
           />
-          <button 
-            onClick={() => handleSend(input)}
-            className="w-10 h-10 bg-[#1d4ed8] rounded-xl flex items-center justify-center text-white hover:brightness-110 transition-colors"
+          <button
+            onClick={() => void sendMessage(input)}
+            className="w-10 h-10 bg-[#1d4ed8] rounded-xl flex items-center justify-center text-white hover:brightness-110 transition-colors disabled:opacity-50"
+            disabled={isSending}
           >
             <Send className="w-4 h-4" />
           </button>
         </div>
+
         <div className="flex gap-2 mt-2 px-1 overflow-x-auto no-scrollbar pb-1">
-          <button onClick={() => setInput('Mude meu treino para foco em passes.')} className="bg-white/5 whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] uppercase font-mono text-slate-400 hover:text-white transition-colors">🎯 Focar em Passe</button>
-          <button onClick={() => setInput('O que é metavisão?')} className="bg-white/5 whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] uppercase font-mono text-slate-400 hover:text-white transition-colors">🧠 Metavisão</button>
-          <button onClick={() => setInput('Crie um treino mais leve hoje. Estou cansado.')} className="bg-white/5 whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] uppercase font-mono text-slate-400 hover:text-white transition-colors">🔋 Treino Regenerativo</button>
+          {suggestedPrompts.map((prompt) => (
+            <button
+              key={prompt}
+              onClick={() => void sendMessage(prompt)}
+              disabled={isSending}
+              className="bg-white/5 whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] uppercase font-mono text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+            >
+              {prompt}
+            </button>
+          ))}
+          <button
+            onClick={() => void sendMessage('Explique meu próximo gargalo técnico com base no meu ego atual.')}
+            disabled={isSending}
+            className="bg-white/5 whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] uppercase font-mono text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+          >
+            <Brain className="inline-block w-3 h-3 mr-1" />
+            Gargalo Atual
+          </button>
         </div>
       </div>
     </div>

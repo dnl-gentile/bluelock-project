@@ -1,15 +1,14 @@
 'use client';
 
 import { AuthProvider, useAuth } from '@lib/AuthContext';
-import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Compass, Swords, Trophy, BookOpen, MessageSquare, Shield, UserCircle } from 'lucide-react';
-import BlueLockLogo from '../src/components/BlueLockLogo';
+import { Compass, Swords, Trophy, BookOpen, MessageSquare, Shield } from 'lucide-react';
+import FirestoreStateSync from '@components/FirestoreStateSync';
 
 function Navigation() {
   const pathname = usePathname();
-  const { profile, logout } = useAuth();
+  const { profile } = useAuth();
 
   if (pathname === '/login' || !profile) return null;
 
@@ -76,6 +75,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
+      <FirestoreStateSync />
       <LayoutContent>{children}</LayoutContent>
     </AuthProvider>
   );

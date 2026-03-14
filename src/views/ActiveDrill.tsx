@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, RotateCcw, Swords, Flag } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useEgoStore } from '../store/useEgoStore';
+import { useBlueLockContentStore } from '@store/useBlueLockContentStore';
 
 type DrillPhase = 'PREVIEW' | 'COUNTDOWN' | 'ACTIVE' | 'FINISHED';
 
@@ -19,12 +20,23 @@ const DRILL_MOCK = {
 };
 
 export default function ActiveDrill() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
   const { completeTraining } = useEgoStore();
+  const trainingPlan = useBlueLockContentStore((state) => state.trainingPlan);
+  const activeDrill =
+    trainingPlan.drills.find((drill) => String(drill.id) === params?.id) ??
+    trainingPlan.drills[0];
   
   const [phase, setPhase] = useState<DrillPhase>('PREVIEW');
   const [countdown, setCountdown] = useState(3);
   const [timeLeft, setTimeLeft] = useState(DRILL_MOCK.durationSeconds);
+
+  useEffect(() => {
+    setTimeLeft(DRILL_MOCK.durationSeconds);
+    setPhase('PREVIEW');
+    setCountdown(3);
+  }, [activeDrill?.id]);
 
   // Countdown Logic (3..2..1)
   useEffect(() => {
@@ -84,7 +96,7 @@ export default function ActiveDrill() {
     
     // Save to history and grant XP
     completeTraining({
-      type: DRILL_MOCK.title,
+      type: activeDrill?.title ?? DRILL_MOCK.title,
       xpEarned: 350
     });
   };
@@ -128,7 +140,9 @@ export default function ActiveDrill() {
       {/* Dynamic Header */}
       <div className="absolute top-0 left-0 right-0 p-6 z-20 bg-gradient-to-b from-black/80 to-transparent">
         <h2 className="text-white font-bold font-mono tracking-widest text-sm uppercase opacity-50">Protocolo Ativo</h2>
-        <h1 className="text-2xl font-black text-[#1d4ed8] uppercase tracking-tighter text-shadow-neon">{DRILL_MOCK.title}</h1>
+        <h1 className="text-2xl font-black text-[#1d4ed8] uppercase tracking-tighter text-shadow-neon">
+          {activeDrill?.title ?? DRILL_MOCK.title}
+        </h1>
       </div>
 
       <AnimatePresence mode="wait">
@@ -149,15 +163,15 @@ export default function ActiveDrill() {
             ) : (
               <div className="w-full bg-[#162032] p-8 rounded-3xl border border-[#ff003c]/30 flex flex-col items-center text-center space-y-6 box-shadow-neon">
                 <Swords className="w-16 h-16 text-[#ff003c] animate-pulse-neon" />
-                <p className="text-xl text-white font-medium">"{DRILL_MOCK.description}"</p>
+                <p className="text-xl text-white font-medium">"{activeDrill?.description ?? DRILL_MOCK.description}"</p>
                 <div className="w-full space-y-3 pt-4 border-t border-white/10 text-left">
                   <div className="bg-[#0a0e17] px-4 py-3 rounded-xl border border-white/5">
                     <span className="text-[#1d4ed8] font-bold mr-2">1.</span>
-                    <span className="text-slate-300">{DRILL_MOCK.topic1}</span>
+                    <span className="text-slate-300">{activeDrill?.topics[0] ?? DRILL_MOCK.topic1}</span>
                   </div>
                   <div className="bg-[#0a0e17] px-4 py-3 rounded-xl border border-white/5">
                     <span className="text-[#1d4ed8] font-bold mr-2">2.</span>
-                    <span className="text-slate-300">{DRILL_MOCK.topic2}</span>
+                    <span className="text-slate-300">{activeDrill?.topics[1] ?? DRILL_MOCK.topic2}</span>
                   </div>
                 </div>
               </div>

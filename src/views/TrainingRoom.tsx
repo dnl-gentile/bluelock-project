@@ -1,56 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, CheckCircle2, ChevronDown, ChevronUp, MessageSquare, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-
-const MOCK_DRILLS = [
-  {
-    id: 1,
-    title: 'Aceleração de Resposta',
-    emoji: '⚡️',
-    type: 'velocidade',
-    description: 'Corridas curtas de 10m focando na explosão dos três primeiros passos.',
-    topics: [
-      'Posição base agachada',
-      'Corpo projetado para frente 45 graus',
-      'Foco total no momento de disparo'
-    ],
-    videoUrl: 'placeholder'
-  },
-  {
-    id: 2,
-    title: 'Drible Fantasma (Tesoura)',
-    emoji: '👻',
-    type: 'drible',
-    description: 'Foque na ginga do quadril para desequilibrar o oponente antes de tocar na bola.',
-    topics: [
-      'Passe a perna por cima da bola sem tocá-la',
-      'Mude o peso do corpo (o "sell" do movimento)',
-      'Exploda para a direção oposta'
-    ],
-    videoUrl: 'placeholder'
-  },
-  {
-    id: 3,
-    title: 'Finalização Seca (Ego)',
-    emoji: '🔥',
-    type: 'chute',
-    description: 'Chute de peito de pé buscando o ângulo sem precisar ajeitar a bola.',
-    topics: [
-      'Pé de apoio firme ao lado da bola',
-      'Corpo levemente inclinado sobre a bola',
-      'Ponto de contato: osso do "cadarço" da chuteira'
-    ],
-    videoUrl: 'placeholder'
-  }
-];
+import { useBlueLockContentStore } from '@store/useBlueLockContentStore';
 
 export default function TrainingRoom() {
-  const [expandedDrill, setExpandedDrill] = useState<number | null>(MOCK_DRILLS[0].id);
   const router = useRouter();
+  const trainingPlan = useBlueLockContentStore((state) => state.trainingPlan);
+  const [expandedDrill, setExpandedDrill] = useState<number | null>(trainingPlan.drills[0]?.id ?? null);
 
   const todayStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  useEffect(() => {
+    setExpandedDrill(trainingPlan.drills[0]?.id ?? null);
+  }, [trainingPlan.updatedAt, trainingPlan.drills]);
 
   return (
     <div className="flex flex-col space-y-6 max-w-4xl mx-auto h-full">
@@ -59,14 +23,14 @@ export default function TrainingRoom() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 p-2">
         <div>
           <h1 className="text-3xl font-black text-white tracking-tighter uppercase text-shadow-neon">
-            Treino do Dia
+            {trainingPlan.title}
           </h1>
           <p className="text-[#1d4ed8] font-mono text-sm capitalize">{todayStr}</p>
         </div>
         
         <div className="flex items-center gap-2 text-slate-400 bg-[#0a0e17] px-4 py-2 rounded-xl border border-white/5">
           <Target className="w-4 h-4 text-[#ff003c]" />
-          <span className="text-sm font-mono uppercase tracking-widest text-[#ff003c]">Foco: Explosão & Ataque</span>
+          <span className="text-sm font-mono uppercase tracking-widest text-[#ff003c]">Foco: {trainingPlan.focus}</span>
         </div>
       </div>
 
@@ -75,9 +39,14 @@ export default function TrainingRoom() {
         
         {/* Drills List */}
         <div className="lg:col-span-2 space-y-4">
-          <p className="text-sm text-slate-500 font-mono tracking-widest uppercase mb-2">Protocolo Gerado Automático</p>
+          <p className="text-sm text-slate-500 font-mono tracking-widest uppercase mb-2">
+            {trainingPlan.source === 'anri' ? 'Protocolo calibrado pela Anri' : 'Protocolo gerado automático'}
+          </p>
+          <p className="text-sm text-slate-400">
+            {trainingPlan.rationale}
+          </p>
           
-          {MOCK_DRILLS.map((drill) => {
+          {trainingPlan.drills.map((drill) => {
             const isExpanded = expandedDrill === drill.id;
             return (
               <motion.div 
@@ -140,7 +109,7 @@ export default function TrainingRoom() {
         {/* Start Button & AI Tweaks */}
         <div className="space-y-6">
           <Link 
-            href="/drill/1"
+            href={`/drill/${trainingPlan.drills[0]?.id ?? 1}`}
             className="w-full relative overflow-hidden group bg-gradient-to-br from-[#ff003c] to-[#990024] p-6 rounded-3xl flex flex-col items-center justify-center border border-[#ff003c]/50 hover:shadow-[0_0_40px_rgba(255,0,60,0.4)] transition-all cursor-pointer block text-center"
           >
             <div className="absolute inset-0 bg-[#1d4ed8] mix-blend-overlay opacity-0 group-hover:opacity-20 transition-opacity" />
