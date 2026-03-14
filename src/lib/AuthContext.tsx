@@ -17,6 +17,7 @@ interface UserProfile {
   uid: string;
   role: UserRole;
   coachId?: string; // If trainee, who is the coach
+  traineeId?: string; // If coach, who is the linked trainee
   name: string;
   photoURL?: string;
 }
@@ -76,7 +77,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const storedProfile = docSnap.data() as UserProfile;
               const hydratedProfile = withDefaultProfilePhoto(storedProfile, currentUser.photoURL);
 
-              if (hydratedProfile.photoURL !== storedProfile.photoURL) {
+              if (hydratedProfile.role === 'coach' && !hydratedProfile.traineeId) {
+                // Find a trainee to link
+                const { collection, query, where, getDocs, limit } = await import('firebase/firestore');
+                const q = query(collection(db, 'users'), where('role', '==', 'trainee'), limit(1));
+                const traineesSnap = await getDocs(q);
+                if (!traineesSnap.empty) {
+                  hydratedProfile.traineeId = traineesSnap.docs[0].id;
+                }
+              }
+
+              if (hydratedProfile.photoURL !== storedProfile.photoURL || hydratedProfile.traineeId !== storedProfile.traineeId) {
                 await setDoc(docRef, hydratedProfile, { merge: true });
               }
 

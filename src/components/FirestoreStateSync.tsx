@@ -45,7 +45,7 @@ function serializeAthleteState(payload: {
 }
 
 export default function FirestoreStateSync() {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   const egoOwnerUid = useEgoStore((state) => state.ownerUid);
   const xp = useEgoStore((state) => state.xp);
@@ -114,12 +114,15 @@ export default function FirestoreStateSync() {
     bindChatOwner(uid);
     bindAthleteOwner(uid);
 
-    if (!uid || !db) return;
+    // If role is coach, sync with the linked trainee instead of self
+    const syncUid = (profile?.role === 'coach' && profile?.traineeId) ? profile.traineeId : uid;
 
-    const egoDocRef = doc(db, 'users', uid, 'appState', 'ego');
-    const contentDocRef = doc(db, 'users', uid, 'appState', 'content');
-    const chatDocRef = doc(db, 'users', uid, 'appState', 'chat');
-    const athleteDocRef = doc(db, 'users', uid, 'appState', 'athlete');
+    if (!syncUid || !db) return;
+
+    const egoDocRef = doc(db, 'users', syncUid, 'appState', 'ego');
+    const contentDocRef = doc(db, 'users', syncUid, 'appState', 'content');
+    const chatDocRef = doc(db, 'users', syncUid, 'appState', 'chat');
+    const athleteDocRef = doc(db, 'users', syncUid, 'appState', 'athlete');
 
     const unsubscribeEgo = onSnapshot(
       egoDocRef,
@@ -267,6 +270,8 @@ export default function FirestoreStateSync() {
     };
   }, [
     user?.uid,
+    profile?.role,
+    profile?.traineeId,
     loading,
     bindEgoOwner,
     bindContentOwner,

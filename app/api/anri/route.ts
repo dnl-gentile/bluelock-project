@@ -245,13 +245,15 @@ async function getAuthenticatedUid(request: Request) {
 async function loadAuthoritativeState(uid: string) {
   try {
     const adminDb = getFirebaseAdminDb();
-    const [contentSnapshot, egoSnapshot, chatSnapshot] = await Promise.all([
+    const [userSnapshot, contentSnapshot, egoSnapshot, chatSnapshot] = await Promise.all([
+      adminDb.doc(`users/${uid}`).get(),
       adminDb.doc(`users/${uid}/appState/content`).get(),
       adminDb.doc(`users/${uid}/appState/ego`).get(),
       adminDb.doc(`users/${uid}/appState/chat`).get(),
     ]);
 
     return {
+      profile: userSnapshot.exists ? userSnapshot.data() : null,
       content: contentSnapshot.exists ? contentSnapshot.data() : null,
       ego: egoSnapshot.exists ? egoSnapshot.data() : null,
       chat: chatSnapshot.exists ? chatSnapshot.data() : null,
@@ -748,6 +750,9 @@ export async function POST(request: Request) {
       '11. Se o atleta pedir para salvar preset, use save_preset ou save_preset_and_confirm_swap.',
       '12. Se o atleta pedir para ativar preset existente, use activate_preset e presetName com o nome mais proximo do contexto.',
       `13. Canal da solicitacao atual: ${body.channel ?? 'chat'}`,
+      authoritativeState?.profile?.role === 'coach'
+        ? '14. PERMISSAO (TREINADOR): Voce tem permissao total para criar novos exercicios, novas entradas na Bluelockpedia (wikiEntries) e novas habilidades (skillTreeEntries).'
+        : '14. PERMISSAO (ATLETA): O atleta NAO TEM PERMISSAO para criar novos exercicios ou entradas na Wiki. Use apenas treinos existentes. As listas wikiEntries e skillTreeEntries DEVEM vir VAZIAS. Diga que apenas o treinador pode criar novas tecnicas.',
     ].join('\n'),
   ].join('\n');
 
