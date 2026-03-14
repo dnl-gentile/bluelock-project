@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Compass, Swords, Trophy, BookOpen, MessageSquare, Shield } from 'lucide-react';
 import FirestoreStateSync from '@components/FirestoreStateSync';
 import AthleteAutomation from '@components/AthleteAutomation';
+import ChunkRecovery from '@components/ChunkRecovery';
 
 function Navigation() {
   const pathname = usePathname();
@@ -75,10 +76,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <FirestoreStateSync />
-      <AthleteAutomation />
-      <LayoutContent>{children}</LayoutContent>
-    </AuthProvider>
+    <>
+      <ChunkRecovery />
+      <AuthProvider>
+        <FirestoreStateSync />
+        <AthleteAutomation />
+        <LayoutContent>{children}</LayoutContent>
+      </AuthProvider>
+    </>
   );
 }

@@ -21,7 +21,7 @@ const QUOTES = [
 
 export default function Home() {
   const { profile } = useAuth();
-  const { history, xp, rank, skills } = useEgoStore();
+  const { history, xp, skills } = useEgoStore();
   const weather = useAthleteProfileStore((state) => state.weather);
   const dailyBriefing = useAthleteProfileStore((state) => state.dailyBriefing);
   const notifications = useAthleteProfileStore((state) => state.notifications);
@@ -43,6 +43,11 @@ export default function Home() {
     fullMark: 100,
   }));
   const currentWeek = performance.streak.currentWeek;
+  const matrixHighlights = [
+    { label: 'Score Geral', value: `${performance.overallScore}%` },
+    { label: 'Domínios', value: `${performance.distinctDomains}/6` },
+    { label: 'Posição', value: `#${performance.leaderboardPosition}` },
+  ];
 
   const isIndoorProtocol = weather?.condition === 'Rain';
   const requestNotificationPermission = async () => {
@@ -82,114 +87,27 @@ export default function Home() {
         )}
       </div>
 
-      {/* Center Layout For Widget And Radar */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-        {/* Motivational Quote & Streak Row */}
-        <div className="flex flex-col gap-4">
-          <div className="bg-gradient-to-br from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-[#1d4ed8]/20 relative overflow-hidden flex flex-col justify-center flex-1">
-            <Zap className="absolute top-4 right-4 w-24 h-24 text-[#1d4ed8] opacity-5 -rotate-12" />
-            <h3 className="text-xs text-[#1d4ed8] font-mono tracking-widest uppercase mb-2">Mensagem do Dia</h3>
-            <p className="text-lg md:text-xl font-medium text-white max-w-[90%] italic">
-              "{quote}"
-            </p>
-          </div>
-
-          <div 
-            className="bg-[#050505] p-6 rounded-3xl border border-[#ff003c]/30 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer transition-colors hover:border-[#ff003c]/70 min-h-[220px]"
-            onClick={() => setViewMode(viewMode === 'streak' ? 'calendar' : 'streak')}
-          >
-            <div className={`absolute inset-0 bg-gradient-to-b from-[#ff003c]/20 to-transparent transition-opacity ${viewMode === 'streak' ? 'opacity-20' : 'opacity-10'}`} />
-            
-            <button className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full z-10">
-               <ArrowRightLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(event) => {
-                event.stopPropagation();
-                setIsStreakInfoOpen(true);
-              }}
-              className="absolute top-4 left-4 text-slate-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full z-10"
-            >
-              <Info className="w-4 h-4" />
-            </button>
-
-            <AnimatePresence mode="wait">
-              {viewMode === 'streak' ? (
-                <motion.div 
-                   key="streak" 
-                   initial={{ opacity: 0, rotateY: 90 }} 
-                   animate={{ opacity: 1, rotateY: 0 }} 
-                   exit={{ opacity: 0, rotateY: -90 }} 
-                   transition={{ duration: 0.2 }}
-                   className="flex flex-col items-center w-full z-10"
-                >
-                  <Flame className="w-10 h-10 text-[#ff003c] mb-2 drop-shadow-[0_0_15px_rgba(255,0,60,0.8)]" />
-                  <h3 className="text-sm text-slate-400 font-mono uppercase tracking-widest">Ofensiva Atual</h3>
-                  <div className="flex items-end gap-1 mt-1">
-                    <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-t from-[#ff003c] to-[#ff4d4d]">
-                      {streak}
-                    </span>
-                    <span className="text-xl text-slate-500 font-bold mb-1">dias</span>
-                  </div>
-                  <p className="text-[10px] text-[#ff003c] font-mono mt-4 uppercase opacity-50">Clique para ver o calendário</p>
-                </motion.div>
-              ) : (
-                <motion.div 
-                  key="calendar" 
-                  initial={{ opacity: 0, rotateY: 90 }} 
-                  animate={{ opacity: 1, rotateY: 0 }} 
-                  exit={{ opacity: 0, rotateY: -90 }} 
-                   transition={{ duration: 0.2 }}
-                   className="flex flex-col items-center w-full z-10 h-full"
-                >
-                  <h3 className="text-sm text-slate-400 font-mono uppercase tracking-widest mb-3">Semana Atual</h3>
-                  <div className="grid grid-cols-7 gap-2 w-full mx-auto max-w-[280px]">
-                     {currentWeek.days.map((day) => (
-                        <div key={day.dateKey} className="flex flex-col items-center gap-1">
-                          <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">{day.label}</span>
-                          <div
-                            className={`w-full aspect-square rounded-xl border flex items-center justify-center text-[10px] font-bold ${
-                              day.trained
-                                ? 'bg-[#ff003c] border-[#ff003c]/50 text-white shadow-[0_0_8px_rgba(255,0,60,0.35)]'
-                                : day.isWeekend && currentWeek.protectedWeekend
-                                ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-300'
-                                : 'bg-[#162032] border-white/10 text-slate-500'
-                            }`}
-                          >
-                            {day.trained ? 'OK' : day.isWeekend && currentWeek.protectedWeekend ? 'FREE' : '--'}
-                          </div>
-                        </div>
-                     ))}
-                  </div>
-                  <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-400">
-                    {currentWeek.missedWeekdays === 0
-                      ? 'Semana perfeita. O fim de semana fica protegido.'
-                      : currentWeek.missedWeekdays === 1
-                      ? currentWeek.compensationFulfilled
-                        ? 'Um dia congelado e os dois dias do fim de semana pagos.'
-                        : 'Um dia congelado. Treinar sábado e domingo mantém a semana viva.'
-                      : `Penalidade ativa: -${currentWeek.penaltyDays} dias pelas faltas além da primeira.`}
-                  </p>
-                  <p className="text-[10px] text-[#ff003c] font-mono mt-auto pt-4 uppercase opacity-50">Toque para voltar</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+      {/* Dashboard Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-6 items-stretch">
+        <div className="bg-gradient-to-br from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-[#1d4ed8]/20 relative overflow-hidden flex flex-col justify-center min-h-[240px] h-full">
+          <Zap className="absolute top-4 right-4 w-24 h-24 text-[#1d4ed8] opacity-5 -rotate-12" />
+          <h3 className="text-xs text-[#1d4ed8] font-mono tracking-widest uppercase mb-2">Mensagem do Dia</h3>
+          <p className="text-lg md:text-xl font-medium text-white max-w-[90%] italic">
+            "{quote}"
+          </p>
         </div>
 
-        {/* Radar Chart Panel */}
-        <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10 flex flex-col items-center justify-start min-h-[420px]">
-          <div className="flex items-center gap-2 mb-2 w-full">
+        <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10 h-full">
+          <div className="flex items-center gap-2 mb-4">
             <UserSquare className="w-5 h-5 text-[#1d4ed8]" />
-            <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Matriz Pessoal</h2>
+            <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Ficha do Atleta</h2>
           </div>
 
-          <div className="w-full rounded-2xl border border-white/5 bg-black/20 p-4 mb-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-4">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+            <div className="rounded-2xl border border-white/5 bg-black/20 p-4">
+              <div className="flex items-start gap-4">
                 {profile?.photoURL && (
-                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#1d4ed8]/30 bg-[#151922] p-[2px]">
+                  <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-[#1d4ed8]/30 bg-[#151922] p-[2px]">
                     <img
                       src={profile.photoURL}
                       alt={profile.name}
@@ -197,59 +115,173 @@ export default function Home() {
                     />
                   </div>
                 )}
+
                 <div className="min-w-0">
-                  <h3 className="text-lg font-black uppercase tracking-tight text-white">{profile?.name || 'Bernardo'}</h3>
-                  <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#1d4ed8]">
-                    {age} anos · {stage}
+                  <h3 className="text-2xl font-black uppercase tracking-tight text-white">
+                    {profile?.name || 'Bernardo'}
+                  </h3>
+                  <p className="mt-1 text-[11px] font-mono uppercase tracking-[0.24em] text-[#1d4ed8]">
+                    {age} anos · fase 2: {stage}
                   </p>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                  <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400">
                     {dailyBriefing?.subheadline || 'A Anri ainda está lendo o seu ritmo do dia.'}
                   </p>
                 </div>
               </div>
 
-              <div className="flex shrink-0 justify-center sm:justify-end">
-                <TrainingRankBadge
-                  position={performance.leaderboardPosition}
-                  level={performance.level}
-                  className="w-[150px]"
-                />
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Dias treinados</p>
+                  <p className="mt-1 text-lg font-black text-white">{performance.totalTrainingDays}</p>
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Armas abertas</p>
+                  <p className="mt-1 text-lg font-black text-white">{performance.unlockedSkills}</p>
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Score geral</p>
+                  <p className="mt-1 text-lg font-black text-white">{performance.overallScore}%</p>
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Posição</p>
+                  <p className="mt-1 text-lg font-black text-white">#{performance.leaderboardPosition}</p>
+                </div>
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
-                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Dias treinados</p>
-                <p className="mt-1 text-lg font-black text-white">{performance.totalTrainingDays}</p>
-              </div>
-              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
-                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Armas abertas</p>
-                <p className="mt-1 text-lg font-black text-white">{performance.unlockedSkills}</p>
-              </div>
-              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
-                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Posição</p>
-                <p className="mt-1 text-lg font-black text-white">#{performance.leaderboardPosition}</p>
-              </div>
+            <div className="flex items-center justify-center rounded-2xl border border-white/5 bg-black/20 px-5 py-4">
+              <TrainingRankBadge
+                position={performance.leaderboardPosition}
+                level={performance.level}
+                className="w-[180px]"
+              />
             </div>
-          </div>
-          
-          <div className="w-full flex-1 min-h-[200px] relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="65%" data={radarData}>
-                <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: '#1d4ed8', fontSize: 10, fontFamily: 'monospace' }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                <Radar name="Ego" dataKey="A" stroke="#1d4ed8" fill="#1d4ed8" fillOpacity={0.2} strokeWidth={2} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="w-full flex justify-between px-4 mt-2">
-            <span className="text-xs font-mono text-slate-500 uppercase">Classificação</span>
-            <span className="text-sm font-bold text-[#1d4ed8]">RANK {rank}</span>
           </div>
         </div>
 
+        <div
+          className="bg-[#050505] p-6 rounded-3xl border border-[#ff003c]/30 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer transition-colors hover:border-[#ff003c]/70 min-h-[220px] h-full"
+          onClick={() => setViewMode(viewMode === 'streak' ? 'calendar' : 'streak')}
+        >
+          <div className={`absolute inset-0 bg-gradient-to-b from-[#ff003c]/20 to-transparent transition-opacity ${viewMode === 'streak' ? 'opacity-20' : 'opacity-10'}`} />
+          
+          <button className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full z-10">
+             <ArrowRightLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              setIsStreakInfoOpen(true);
+            }}
+            className="absolute top-4 left-4 text-slate-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full z-10"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+
+          <AnimatePresence mode="wait">
+            {viewMode === 'streak' ? (
+              <motion.div
+                key="streak"
+                initial={{ opacity: 0, rotateY: 90 }}
+                animate={{ opacity: 1, rotateY: 0 }}
+                exit={{ opacity: 0, rotateY: -90 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col items-center w-full z-10"
+              >
+                <Flame className="w-10 h-10 text-[#ff003c] mb-2 drop-shadow-[0_0_15px_rgba(255,0,60,0.8)]" />
+                <h3 className="text-sm text-slate-400 font-mono uppercase tracking-widest">Ofensiva Atual</h3>
+                <div className="flex items-end gap-1 mt-1">
+                  <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-t from-[#ff003c] to-[#ff4d4d]">
+                    {streak}
+                  </span>
+                  <span className="text-xl text-slate-500 font-bold mb-1">dias</span>
+                </div>
+                <p className="text-[10px] text-[#ff003c] font-mono mt-4 uppercase opacity-50">Clique para ver o calendário</p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="calendar"
+                initial={{ opacity: 0, rotateY: 90 }}
+                animate={{ opacity: 1, rotateY: 0 }}
+                exit={{ opacity: 0, rotateY: -90 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col items-center w-full z-10 h-full"
+              >
+                <h3 className="text-sm text-slate-400 font-mono uppercase tracking-widest mb-3">Semana Atual</h3>
+                <div className="grid grid-cols-7 gap-2 w-full mx-auto max-w-[280px]">
+                   {currentWeek.days.map((day) => (
+                      <div key={day.dateKey} className="flex flex-col items-center gap-1">
+                        <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">{day.label}</span>
+                        <div
+                          className={`w-full aspect-square rounded-xl border flex items-center justify-center text-[10px] font-bold ${
+                            day.trained
+                              ? 'bg-[#ff003c] border-[#ff003c]/50 text-white shadow-[0_0_8px_rgba(255,0,60,0.35)]'
+                              : day.isWeekend && currentWeek.protectedWeekend
+                              ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-300'
+                              : 'bg-[#162032] border-white/10 text-slate-500'
+                          }`}
+                        >
+                          {day.trained ? 'OK' : day.isWeekend && currentWeek.protectedWeekend ? 'FREE' : '--'}
+                        </div>
+                      </div>
+                   ))}
+                </div>
+                <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-400">
+                  {currentWeek.missedWeekdays === 0
+                    ? 'Semana perfeita. O fim de semana fica protegido.'
+                    : currentWeek.missedWeekdays === 1
+                    ? currentWeek.compensationFulfilled
+                      ? 'Um dia congelado e os dois dias do fim de semana pagos.'
+                      : 'Um dia congelado. Treinar sábado e domingo mantém a semana viva.'
+                    : `Penalidade ativa: -${currentWeek.penaltyDays} dias pelas faltas além da primeira.`}
+                </p>
+                <p className="text-[10px] text-[#ff003c] font-mono mt-auto pt-4 uppercase opacity-50">Toque para voltar</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10 h-full">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex items-center gap-2">
+              <UserSquare className="w-5 h-5 text-[#1d4ed8]" />
+              <div>
+                <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Matriz Pessoal</h2>
+                <p className="text-xs font-mono uppercase tracking-[0.18em] text-slate-500">
+                  Leitura geral das armas que Bernardo ja ativou
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {matrixHighlights.map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-full border border-white/8 bg-black/20 px-3 py-2 text-right"
+                >
+                  <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
+                  <p className="text-sm font-black text-white">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-[28px] border border-white/5 bg-black/20 p-4 sm:p-6">
+            <div className="h-[320px] sm:h-[360px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="52%" outerRadius="74%" data={radarData}>
+                  <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                  <PolarAngleAxis
+                    dataKey="subject"
+                    tick={{ fill: '#1d4ed8', fontSize: 12, fontFamily: 'monospace' }}
+                  />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                  <Radar name="Ego" dataKey="A" stroke="#1d4ed8" fill="#1d4ed8" fillOpacity={0.24} strokeWidth={2.5} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Call to Action -> Training */}

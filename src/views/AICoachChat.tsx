@@ -436,6 +436,27 @@ export default function AICoachChat() {
           </div>
         )}
 
+        <div className="flex gap-2 mb-2 px-1 overflow-x-auto no-scrollbar pb-1">
+          {suggestedPrompts.map((prompt) => (
+            <button
+              key={prompt}
+              onClick={() => void sendMessage(prompt)}
+              disabled={isSending}
+              className="bg-white/5 whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] uppercase font-mono text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+            >
+              {prompt}
+            </button>
+          ))}
+          <button
+            onClick={() => void sendMessage('Explique meu próximo gargalo técnico com base no meu ego atual.')}
+            disabled={isSending}
+            className="bg-white/5 whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] uppercase font-mono text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+          >
+            <Brain className="inline-block w-3 h-3 mr-1" />
+            Gargalo Atual
+          </button>
+        </div>
+
         <div className="p-2 bg-[#0a0e17] border border-white/10 rounded-2xl flex items-center gap-2">
           <input
             type="text"
@@ -456,27 +477,6 @@ export default function AICoachChat() {
             disabled={isSending}
           >
             <Send className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="flex gap-2 mt-2 px-1 overflow-x-auto no-scrollbar pb-1">
-          {suggestedPrompts.map((prompt) => (
-            <button
-              key={prompt}
-              onClick={() => void sendMessage(prompt)}
-              disabled={isSending}
-              className="bg-white/5 whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] uppercase font-mono text-slate-400 hover:text-white transition-colors disabled:opacity-50"
-            >
-              {prompt}
-            </button>
-          ))}
-          <button
-            onClick={() => void sendMessage('Explique meu próximo gargalo técnico com base no meu ego atual.')}
-            disabled={isSending}
-            className="bg-white/5 whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] uppercase font-mono text-slate-400 hover:text-white transition-colors disabled:opacity-50"
-          >
-            <Brain className="inline-block w-3 h-3 mr-1" />
-            Gargalo Atual
           </button>
         </div>
       </div>
