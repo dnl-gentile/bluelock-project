@@ -13,10 +13,10 @@ export const metadata: Metadata = {
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
     ],
     apple: [
-      { url: '/apple-touch-icon-v8.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon-v9.png', sizes: '180x180', type: 'image/png' },
     ],
     other: [
-      { rel: 'manifest', url: '/site.webmanifest?v=8' },
+      { rel: 'manifest', url: '/site.webmanifest?v=9' },
     ],
   },
 };
