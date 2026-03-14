@@ -86,191 +86,189 @@ export default function Home() {
 
       {/* Center Layout For Widget And Radar */}
       <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-6 items-start">
-        {/* Coluna 1 */}
-        <div className="flex flex-col gap-4">
-          <div className="bg-gradient-to-br from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-[#1d4ed8]/20 relative overflow-hidden min-h-[210px] flex flex-col justify-center">
-            <Zap className="absolute top-4 right-4 w-24 h-24 text-[#1d4ed8] opacity-5 -rotate-12" />
-            <h3 className="text-xs text-[#1d4ed8] font-mono tracking-widest uppercase mb-3">Mensagem do Dia</h3>
-            <p className="max-w-[90%] text-lg md:text-xl font-medium italic text-white">
-              "{quote}"
-            </p>
+        {/* 1. Mensagem do Dia (Desktop: Coluna Esq, Mobile: 1) */}
+        <div className="bg-gradient-to-br from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-[#1d4ed8]/20 relative overflow-hidden min-h-[210px] flex flex-col justify-center h-full">
+          <Zap className="absolute top-4 right-4 w-24 h-24 text-[#1d4ed8] opacity-5 -rotate-12" />
+          <h3 className="text-xs text-[#1d4ed8] font-mono tracking-widest uppercase mb-3">Mensagem do Dia</h3>
+          <p className="max-w-[90%] text-lg md:text-xl font-medium italic text-white">
+            "{quote}"
+          </p>
+        </div>
+
+        {/* 2. Ofensiva Atual (Desktop: Coluna Dir, Mobile: 2) */}
+        <div
+          className="bg-[#050505] p-6 rounded-3xl border border-[#ff003c]/30 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer transition-colors hover:border-[#ff003c]/70 min-h-[220px] h-full"
+          onClick={() => setViewMode(viewMode === 'streak' ? 'calendar' : 'streak')}
+        >
+          <div className={`absolute inset-0 bg-gradient-to-b from-[#ff003c]/20 to-transparent transition-opacity ${viewMode === 'streak' ? 'opacity-20' : 'opacity-10'}`} />
+
+          <button className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full z-10">
+            <ArrowRightLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              setIsStreakInfoOpen(true);
+            }}
+            className="absolute top-4 left-4 text-slate-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full z-10"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+
+          <AnimatePresence mode="wait">
+            {viewMode === 'streak' ? (
+              <motion.div
+                key="streak"
+                initial={{ opacity: 0, rotateY: 90 }}
+                animate={{ opacity: 1, rotateY: 0 }}
+                exit={{ opacity: 0, rotateY: -90 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col items-center w-full z-10"
+              >
+                <Flame className="w-10 h-10 text-[#ff003c] mb-2 drop-shadow-[0_0_15px_rgba(255,0,60,0.8)]" />
+                <h3 className="text-sm text-slate-400 font-mono uppercase tracking-widest">Ofensiva Atual</h3>
+                <div className="flex items-end gap-1 mt-1">
+                  <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-t from-[#ff003c] to-[#ff4d4d]">
+                    {streak}
+                  </span>
+                  <span className="text-xl text-slate-500 font-bold mb-1">dias</span>
+                </div>
+                <p className="text-[10px] text-[#ff003c] font-mono mt-4 uppercase opacity-50">Clique para ver o calendário</p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="calendar"
+                initial={{ opacity: 0, rotateY: 90 }}
+                animate={{ opacity: 1, rotateY: 0 }}
+                exit={{ opacity: 0, rotateY: -90 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col items-center w-full z-10 h-full"
+              >
+                <h3 className="text-sm text-slate-400 font-mono uppercase tracking-widest mb-3">Semana Atual</h3>
+                <div className="grid grid-cols-7 gap-2 w-full mx-auto max-w-[280px]">
+                  {currentWeek.days.map((day) => (
+                    <div key={day.dateKey} className="flex flex-col items-center gap-1">
+                      <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">{day.label}</span>
+                      <div
+                        className={`w-full aspect-square rounded-xl border flex items-center justify-center text-[10px] font-bold ${
+                          day.trained
+                            ? 'bg-[#ff003c] border-[#ff003c]/50 text-white shadow-[0_0_8px_rgba(255,0,60,0.35)]'
+                            : day.isWeekend && currentWeek.protectedWeekend
+                            ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-300'
+                            : 'bg-[#162032] border-white/10 text-slate-500'
+                        }`}
+                      >
+                        {day.trained ? 'OK' : day.isWeekend && currentWeek.protectedWeekend ? 'FREE' : '--'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-400">
+                  {currentWeek.missedWeekdays === 0
+                    ? 'Semana perfeita. O fim de semana fica protegido.'
+                    : currentWeek.missedWeekdays === 1
+                    ? currentWeek.compensationFulfilled
+                      ? 'Um dia congelado e os dois dias do fim de semana pagos.'
+                      : 'Um dia congelado. Treinar sábado e domingo mantém a semana viva.'
+                    : `Penalidade ativa: -${currentWeek.penaltyDays} dias pelas faltas além da primeira.`}
+                </p>
+                <p className="text-[10px] text-[#ff003c] font-mono mt-auto pt-4 uppercase opacity-50">Toque para voltar</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* 3. Ficha Pessoal (Desktop: Coluna Esq, Mobile: 3) */}
+        <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10 flex flex-col gap-4 h-full">
+          <div className="flex items-center gap-2 mb-2">
+            <UserSquare className="w-5 h-5 text-[#1d4ed8]" />
+            <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Ficha Pessoal</h2>
           </div>
 
-          <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10 flex flex-col gap-4">
-            <div className="flex items-center gap-2 mb-2">
-              <UserSquare className="w-5 h-5 text-[#1d4ed8]" />
-              <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Ficha Pessoal</h2>
-            </div>
-
-            <div className="flex items-start gap-4 rounded-2xl border border-white/5 bg-black/20 p-4">
-              {profile?.photoURL && (
-                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#1d4ed8]/30 bg-[#151922] p-[2px]">
-                  <img
-                    src={profile.photoURL}
-                    alt={profile.name}
-                    className="h-full w-full rounded-[14px] object-cover object-center"
-                  />
-                </div>
-              )}
-              <div className="min-w-0">
-                <h3 className="text-xl font-black uppercase tracking-tight text-white">{profile?.name || 'Bernardo'}</h3>
-                <p className="mt-1 text-[11px] font-mono uppercase tracking-[0.16em] text-[#1d4ed8]">
-                  {age} anos · {athleteStageLabel}
+          <div className="flex items-start gap-4 rounded-2xl border border-white/5 bg-black/20 p-4">
+            {profile?.photoURL && (
+              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#1d4ed8]/30 bg-[#151922] p-[2px]">
+                <img
+                  src={profile.photoURL}
+                  alt={profile.name}
+                  className="h-full w-full rounded-[14px] object-cover object-center"
+                />
+              </div>
+            )}
+            <div className="min-w-0">
+              <h3 className="text-xl font-black uppercase tracking-tight text-white">{profile?.name || 'Bernardo'}</h3>
+              <p className="mt-1 text-[11px] font-mono uppercase tracking-[0.16em] text-[#1d4ed8]">
+                {age} anos · {athleteStageLabel}
+              </p>
+              {athleteStageDetail ? (
+                <p className="mt-1 text-xs font-mono uppercase tracking-[0.14em] text-slate-500">
+                  {athleteStageDetail}
                 </p>
-                {athleteStageDetail ? (
-                  <p className="mt-1 text-xs font-mono uppercase tracking-[0.14em] text-slate-500">
-                    {athleteStageDetail}
-                  </p>
-                ) : null}
-                <p className="mt-3 text-sm leading-relaxed text-slate-400">
-                  {dailyBriefing?.subheadline || 'A Anri ainda está lendo o seu ritmo do dia.'}
-                </p>
-              </div>
+              ) : null}
+              <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                {dailyBriefing?.subheadline || 'A Anri ainda está lendo o seu ritmo do dia.'}
+              </p>
             </div>
+          </div>
 
-            <div className="flex justify-center rounded-2xl border border-white/5 bg-black/20 px-4 py-8">
-              <TrainingRankBadge
-                position={performance.leaderboardPosition}
-                level={performance.level}
-                className="w-48 max-w-[80%]"
-              />
+          <div className="flex justify-center rounded-2xl border border-white/5 bg-black/20 px-4 py-8">
+            <TrainingRankBadge
+              position={performance.leaderboardPosition}
+              level={performance.level}
+              className="w-48 max-w-[80%]"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 mt-auto">
+            <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
+              <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Dias treinados</p>
+              <p className="mt-1 text-lg font-black text-white">{performance.totalTrainingDays}</p>
             </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
-                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Dias treinados</p>
-                <p className="mt-1 text-lg font-black text-white">{performance.totalTrainingDays}</p>
-              </div>
-              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
-                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Armas abertas</p>
-                <p className="mt-1 text-lg font-black text-white">{performance.unlockedSkills}</p>
-              </div>
-              <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
-                <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Posição</p>
-                <p className="mt-1 text-lg font-black text-white">#{performance.leaderboardPosition}</p>
-              </div>
+            <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
+              <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Armas abertas</p>
+              <p className="mt-1 text-lg font-black text-white">{performance.unlockedSkills}</p>
+            </div>
+            <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3">
+              <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">Posição</p>
+              <p className="mt-1 text-lg font-black text-white">#{performance.leaderboardPosition}</p>
             </div>
           </div>
         </div>
 
-        {/* Coluna 2 */}
-        <div className="flex flex-col gap-4">
-          <div
-            className="bg-[#050505] p-6 rounded-3xl border border-[#ff003c]/30 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer transition-colors hover:border-[#ff003c]/70 min-h-[220px]"
-            onClick={() => setViewMode(viewMode === 'streak' ? 'calendar' : 'streak')}
-          >
-            <div className={`absolute inset-0 bg-gradient-to-b from-[#ff003c]/20 to-transparent transition-opacity ${viewMode === 'streak' ? 'opacity-20' : 'opacity-10'}`} />
-
-            <button className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full z-10">
-              <ArrowRightLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(event) => {
-                event.stopPropagation();
-                setIsStreakInfoOpen(true);
-              }}
-              className="absolute top-4 left-4 text-slate-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full z-10"
-            >
-              <Info className="w-4 h-4" />
-            </button>
-
-            <AnimatePresence mode="wait">
-              {viewMode === 'streak' ? (
-                <motion.div
-                  key="streak"
-                  initial={{ opacity: 0, rotateY: 90 }}
-                  animate={{ opacity: 1, rotateY: 0 }}
-                  exit={{ opacity: 0, rotateY: -90 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex flex-col items-center w-full z-10"
-                >
-                  <Flame className="w-10 h-10 text-[#ff003c] mb-2 drop-shadow-[0_0_15px_rgba(255,0,60,0.8)]" />
-                  <h3 className="text-sm text-slate-400 font-mono uppercase tracking-widest">Ofensiva Atual</h3>
-                  <div className="flex items-end gap-1 mt-1">
-                    <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-t from-[#ff003c] to-[#ff4d4d]">
-                      {streak}
-                    </span>
-                    <span className="text-xl text-slate-500 font-bold mb-1">dias</span>
-                  </div>
-                  <p className="text-[10px] text-[#ff003c] font-mono mt-4 uppercase opacity-50">Clique para ver o calendário</p>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="calendar"
-                  initial={{ opacity: 0, rotateY: 90 }}
-                  animate={{ opacity: 1, rotateY: 0 }}
-                  exit={{ opacity: 0, rotateY: -90 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex flex-col items-center w-full z-10 h-full"
-                >
-                  <h3 className="text-sm text-slate-400 font-mono uppercase tracking-widest mb-3">Semana Atual</h3>
-                  <div className="grid grid-cols-7 gap-2 w-full mx-auto max-w-[280px]">
-                    {currentWeek.days.map((day) => (
-                      <div key={day.dateKey} className="flex flex-col items-center gap-1">
-                        <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">{day.label}</span>
-                        <div
-                          className={`w-full aspect-square rounded-xl border flex items-center justify-center text-[10px] font-bold ${
-                            day.trained
-                              ? 'bg-[#ff003c] border-[#ff003c]/50 text-white shadow-[0_0_8px_rgba(255,0,60,0.35)]'
-                              : day.isWeekend && currentWeek.protectedWeekend
-                              ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-300'
-                              : 'bg-[#162032] border-white/10 text-slate-500'
-                          }`}
-                        >
-                          {day.trained ? 'OK' : day.isWeekend && currentWeek.protectedWeekend ? 'FREE' : '--'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-400">
-                    {currentWeek.missedWeekdays === 0
-                      ? 'Semana perfeita. O fim de semana fica protegido.'
-                      : currentWeek.missedWeekdays === 1
-                      ? currentWeek.compensationFulfilled
-                        ? 'Um dia congelado e os dois dias do fim de semana pagos.'
-                        : 'Um dia congelado. Treinar sábado e domingo mantém a semana viva.'
-                      : `Penalidade ativa: -${currentWeek.penaltyDays} dias pelas faltas além da primeira.`}
-                  </p>
-                  <p className="text-[10px] text-[#ff003c] font-mono mt-auto pt-4 uppercase opacity-50">Toque para voltar</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+        {/* 4. Matriz Pessoal (Desktop: Coluna Dir, Mobile: 4) */}
+        <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10 flex flex-col h-full">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2">
+              <UserSquare className="w-5 h-5 text-[#1d4ed8]" />
+              <div>
+                <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Matriz Pessoal</h2>
+                <p className="text-[11px] font-mono uppercase tracking-[0.16em] text-slate-500">
+                  Score geral {performance.overallScore}% · {performance.distinctDomains}/6 domínios
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="bg-gradient-to-b from-[#162032] to-[#0a0e17] p-6 rounded-3xl border border-white/10">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-2">
-                <UserSquare className="w-5 h-5 text-[#1d4ed8]" />
-                <div>
-                  <h2 className="text-lg font-bold text-white uppercase tracking-wider font-display">Matriz Pessoal</h2>
-                  <p className="text-[11px] font-mono uppercase tracking-[0.16em] text-slate-500">
-                    Score geral {performance.overallScore}% · {performance.distinctDomains}/6 domínios
-                  </p>
-                </div>
-              </div>
+          <div className="rounded-[28px] border border-white/5 bg-black/20 p-4 flex-1">
+            <div className="h-[300px] md:h-[340px] w-full min-h-[300px] relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarData}>
+                  <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#1d4ed8', fontSize: 11, fontFamily: 'monospace' }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                  <Radar name="Ego" dataKey="A" stroke="#1d4ed8" fill="#1d4ed8" fillOpacity={0.2} strokeWidth={2} />
+                </RadarChart>
+              </ResponsiveContainer>
             </div>
+          </div>
 
-            <div className="rounded-[28px] border border-white/5 bg-black/20 p-4">
-              <div className="h-[300px] md:h-[340px] w-full min-h-[300px] relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarData}>
-                    <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#1d4ed8', fontSize: 11, fontFamily: 'monospace' }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                    <Radar name="Ego" dataKey="A" stroke="#1d4ed8" fill="#1d4ed8" fillOpacity={0.2} strokeWidth={2} />
-                  </RadarChart>
-                </ResponsiveContainer>
+          <div className="mt-4 grid grid-cols-3 gap-2 shrink-0">
+            {radarData.map((d) => (
+              <div key={d.subject} className="rounded-2xl border border-white/5 bg-black/20 px-2 py-3 text-center flex flex-col items-center justify-center">
+                <p className="text-[9px] font-mono uppercase tracking-[0.1em] text-slate-500 truncate w-full">{d.subject}</p>
+                <p className="text-sm font-black text-white mt-1">{d.A}</p>
               </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              {radarData.map((d) => (
-                <div key={d.subject} className="rounded-2xl border border-white/5 bg-black/20 px-2 py-3 text-center flex flex-col items-center justify-center">
-                  <p className="text-[9px] font-mono uppercase tracking-[0.1em] text-slate-500 truncate w-full">{d.subject}</p>
-                  <p className="text-sm font-black text-white mt-1">{d.A}</p>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </div>
