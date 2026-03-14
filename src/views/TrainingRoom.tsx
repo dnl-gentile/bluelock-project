@@ -39,7 +39,7 @@ export default function TrainingRoom() {
   }, [trainingPlan.updatedAt, trainingPlan.drills]);
 
   return (
-    <div className="flex flex-col space-y-6 max-w-4xl mx-auto h-full pb-32 md:pb-12">
+    <div className="flex flex-col space-y-6 max-w-4xl mx-auto h-full pb-48 md:pb-12">
       
       {/* Header Info */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 p-2">
