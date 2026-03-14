@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Target, Brain, Footprints, ChevronDown, Bot, Play, Activity } from 'lucide-react';
+import { BookOpen, Target, Brain, Footprints, ChevronDown, MessageSquare, Play, Activity } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -141,7 +141,7 @@ export default function Wiki() {
           <div className="mt-8 pt-6 border-t border-white/10">
             <p className="text-slate-400 font-mono text-xs uppercase mb-3 text-center">Precisa aprofundar um conceito? Solicite a inclusão.</p>
             <button onClick={() => router.push('/chat?q=Quero adiconar uma entrada no Wiki')} className="w-full max-w-lg mx-auto bg-[#162032] border border-[#1d4ed8]/30 hover:border-[#1d4ed8] rounded-2xl p-4 flex items-center justify-center gap-3 transition-colors box-shadow-neon">
-              <Bot className="w-6 h-6 text-[#1d4ed8]" />
+              <MessageSquare className="w-6 h-6 text-[#1d4ed8]" />
               <div className="text-left">
                 <span className="block font-bold text-sm tracking-widest text-white uppercase">Solicitar a Anri (Assistente)</span>
                 <span className="block text-xs text-slate-400">Pede para Anri gerar uma nova técnica na Bluelockpedia.</span>

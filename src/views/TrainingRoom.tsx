@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, CheckCircle2, ChevronDown, ChevronUp, MessageSquare, Target } from 'lucide-react';
+import { Play, CheckCircle2, ChevronDown, ChevronUp, ClipboardList, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -154,7 +154,7 @@ export default function TrainingRoom() {
 
           <div className="bg-[#0a0e17] rounded-3xl border border-white/5 p-5">
             <div className="flex items-center gap-2 mb-4 text-[#1d4ed8]">
-              <MessageSquare className="w-5 h-5" />
+              <ClipboardList className="w-5 h-5" />
               <h3 className="text-sm font-mono tracking-widest uppercase font-bold">Ajuste de Treino (Ego)</h3>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed mb-4">

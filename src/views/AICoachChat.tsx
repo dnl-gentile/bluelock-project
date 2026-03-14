@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Bot, User, ArrowLeft, Send } from 'lucide-react';
+import { MessageSquare, User, ArrowLeft, Send } from 'lucide-react';
 
 interface ChatMessage {
   id: string;
@@ -75,7 +75,7 @@ export default function AICoachChat() {
         <button onClick={() => router.back()} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
           <ArrowLeft className="w-5 h-5 text-slate-300" />
         </button>
-        <Bot className="w-8 h-8 text-[#1d4ed8]" />
+        <img src="/anri.jpg" alt="Anri" className="w-10 h-10 rounded-full border-2 border-[#1d4ed8] object-cover" />
         <div>
           <h1 className="text-xl font-bold font-display uppercase tracking-wider text-white">Anri</h1>
           <p className="text-xs font-mono text-slate-500 uppercase">Status: Online</p>
@@ -88,8 +88,12 @@ export default function AICoachChat() {
           const isAI = msg.sender === 'ai';
           return (
             <div key={msg.id} className={`flex gap-3 ${isAI ? 'flex-row' : 'flex-row-reverse'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isAI ? 'bg-[#1d4ed8]/20 border border-[#1d4ed8]/50' : 'bg-white/10'}`}>
-                {isAI ? <Bot className="w-4 h-4 text-[#1d4ed8]" /> : <User className="w-4 h-4 text-slate-300" />}
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${isAI ? 'border border-[#1d4ed8]/50' : 'bg-white/10'}`}>
+                {isAI ? (
+                  <img src="/anri.jpg" alt="Anri" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-4 h-4 text-slate-300" />
+                )}
               </div>
               <div className={`flex flex-col ${isAI ? 'items-start' : 'items-end'} max-w-[80%]`}>
                 <div className={`p-4 rounded-2xl text-sm ${

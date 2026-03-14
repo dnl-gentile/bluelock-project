@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from '@lib/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { Compass, Swords, Trophy, BookOpen, Bot, Shield, UserCircle } from 'lucide-react';
+import { Compass, Swords, Trophy, BookOpen, MessageSquare, Shield, UserCircle } from 'lucide-react';
 import BlueLockLogo from '../src/components/BlueLockLogo';
 
 function Navigation() {
@@ -19,7 +19,7 @@ function Navigation() {
         { href: '/training', icon: <Swords className="w-5 h-5" />, label: 'Treino' },
         { href: '/skills', icon: <Trophy className="w-5 h-5" />, label: 'Ego' },
         { href: '/wiki', icon: <BookOpen className="w-5 h-5" />, label: 'Wiki' },
-        { href: '/chat', icon: <Bot className="w-5 h-5" />, label: 'Anri' },
+        { href: '/chat', icon: <MessageSquare className="w-5 h-5" />, label: 'Anri' },
       ]
     : [
         { href: '/coach', icon: <Shield className="w-5 h-5" />, label: 'Visão do Mestre' },

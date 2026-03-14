@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuth, type UserRole } from '../lib/AuthContext';
-import { Bot } from 'lucide-react';
+import BlueLockLogo from './BlueLockLogo';
 
 interface ProtectedRouteProps {
   allowedRoles?: UserRole[];
@@ -26,7 +26,7 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh] w-full">
-        <Bot className="w-12 h-12 text-[#1d4ed8] animate-pulse" />
+        <BlueLockLogo size={48} className="animate-pulse" />
         <p className="mt-4 text-[#1d4ed8] font-mono animate-pulse">CARREGANDO PROTOCOLOS...</p>
       </div>
     );
