@@ -1,4 +1,5 @@
 'use client';
+// Triggering build with configured secrets
 import { useState, useEffect } from 'react';
 import { useAuth } from '@lib/AuthContext';
 import { LogIn, UserPlus, Loader2, Shield } from 'lucide-react';
